@@ -1,6 +1,5 @@
-import React from "react";
-import s from "./style.moudule.scss";
-import Search from "../../components/search";
+import { NavLink } from "react-router-dom";
+import { EPath } from "../../route/route";
 
 interface Props {}
 
@@ -8,11 +7,13 @@ const Header = (props: Props) => {
   return (
     <>
       <div>
-        <nav className="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-          <div className="container">
-            <a className="navbar-brand" href="#">
-              Hima Studio
-            </a>
+        <nav className="navbar navbar-expand-lg navbar-light bg-light fixed-top border-b-2 border-[#035acb] ">
+          <div className="flex w-full justify-between items-center px-24">
+            <NavLink className="navbar_brand no-underline" to={EPath.root}>
+              <p className="text-[#035acb] m-auto font-bold font-stretch-expanded">
+                DỊCH AI
+              </p>
+            </NavLink>
             <button
               className="navbar-toggler"
               type="button"
@@ -28,24 +29,56 @@ const Header = (props: Props) => {
             <div className="navbar-collapse" id="navbarResponsive">
               <ul className="navbar-nav ms-auto">
                 <li className="nav-item active">
-                  <a className="nav-link" href="#">
-                    Trang chủ
-                  </a>
+                  <NavLink className="nav-link" to={EPath.translate}>
+                    {({ isActive }) => (
+                      <p
+                        className={`${
+                          isActive ? "text-[#035acb]" : "text-black"
+                        } m-auto`}
+                      >
+                        Dịch văn bản
+                      </p>
+                    )}
+                  </NavLink>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" href="#">
-                    Xem ảnh
-                  </a>
+                  <NavLink className="nav-link" to={EPath.translate_photo}>
+                    {({ isActive }) => (
+                      <p
+                        className={`${
+                          isActive ? "text-[#035acb]" : "text-black"
+                        } m-auto`}
+                      >
+                        Dịch hình ảnh
+                      </p>
+                    )}
+                  </NavLink>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" href="#">
-                    Về chúng tôi
-                  </a>
+                  <NavLink className="nav-link" to={EPath.translate_document}>
+                    {({ isActive }) => (
+                      <p
+                        className={`${
+                          isActive ? "text-[#035acb]" : "text-black"
+                        } m-auto`}
+                      >
+                        Dịch tài liệu
+                      </p>
+                    )}
+                  </NavLink>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" href="#">
-                    Liên hệ
-                  </a>
+                  <NavLink className="nav-link" to={EPath.translate_chat}>
+                    {({ isActive }) => (
+                      <p
+                        className={`${
+                          isActive ? "text-[#035acb]" : "text-black"
+                        } m-auto`}
+                      >
+                        Trò chuyện
+                      </p>
+                    )}
+                  </NavLink>
                 </li>
               </ul>
             </div>
@@ -79,51 +112,6 @@ const Header = (props: Props) => {
                 aria-label="Slide 3"
               />
             </div>
-            <div className="carousel-inner">
-              <div
-                className={`${s.carousel_item} active`}
-                style={{
-                  backgroundImage:
-                    'url("https://source.unsplash.com/LAaSoL0LrYs/1920x1080")',
-                }}
-              >
-                <div className="carousel-caption">
-                  <h5>First slide label</h5>
-                  <p>
-                    Some representative placeholder content for the first slide.
-                  </p>
-                </div>
-              </div>
-              <div
-                className={`${s.carousel_item} active`}
-                style={{
-                  backgroundImage:
-                    'url("https://source.unsplash.com/bF2vsubyHcQ/1920x1080")',
-                }}
-              >
-                <div className="carousel-caption">
-                  <h5>Second slide label</h5>
-                  <p>
-                    Some representative placeholder content for the second
-                    slide.
-                  </p>
-                </div>
-              </div>
-              <div
-                className={`${s.carousel_item} active`}
-                style={{
-                  backgroundImage:
-                    'url("https://source.unsplash.com/szFUQoyvrxM/1920x1080")',
-                }}
-              >
-                <div className="carousel-caption">
-                  <h5>Third slide label</h5>
-                  <p>
-                    Some representative placeholder content for the third slide.
-                  </p>
-                </div>
-              </div>
-            </div>
             <button
               className="carousel-control-prev"
               type="button"
@@ -144,19 +132,6 @@ const Header = (props: Props) => {
             </button>
           </div>
         </header>
-        {/* Page Content */}
-        <section className="py-5">
-          <div className="container">
-            <h1 className="fw-light">Full Page Image Slider</h1>
-            <p className="lead">
-              The background images for the slider are set directly in the HTML
-              using inline CSS. The images in this snippet are from{" "}
-              <a href="https://unsplash.com">Unsplash</a>, taken by{" "}
-              <a href="https://unsplash.com/@joannakosinska">Joanna Kosinska</a>
-              !
-            </p>
-          </div>
-        </section>
       </div>
     </>
   );
