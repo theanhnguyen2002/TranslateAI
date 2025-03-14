@@ -5,7 +5,7 @@ type IconProps = {
   color?: string;
 };
 export const IconCopy = (props: IconProps) => {
-  const { width = "18px", height = "18px", color = "white" } = props;
+  const { width = "18px", height = "18px" } = props;
   return (
     <>
       <svg
