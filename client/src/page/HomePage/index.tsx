@@ -1,4 +1,6 @@
 import { Button } from "@mui/material";
+import { NavLink } from "react-router-dom";
+import { EPath } from "../../route/route";
 
 interface Props {}
 
@@ -43,12 +45,12 @@ const HomePage = (props: Props) => {
                 chóng, chính xác, giúp bạn kết nối thế giới dễ dàng! 🌍
               </p>
               <Button className="mt-10 flex items-center justify-center gap-x-6">
-                <a
-                  href="#"
+                <NavLink
+                  to={EPath.translate}
                   className="rounded-md bg-[#04cdf2] px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#035acb]focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 no-underline"
                 >
                   🚀 Dịch ngay!
-                </a>
+                </NavLink>
               </Button>
             </div>
           </div>
