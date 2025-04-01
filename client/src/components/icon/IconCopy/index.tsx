@@ -5,11 +5,11 @@ type IconProps = {
   color?: string;
 };
 export const IconCopy = (props: IconProps) => {
-  const { width = "18px", height = "18px" } = props;
+  const { width = "18px", height = "18px", color="white" } = props;
   return (
     <>
       <svg
-        fill="#000000"
+        fill={color}
         height={width}
         width={height}
         version="1.1"
@@ -22,6 +22,7 @@ export const IconCopy = (props: IconProps) => {
       >
         <g id="Text-files">
           <path
+          fill={color}
             d="M53.9791489,9.1429005H50.010849c-0.0826988,0-0.1562004,0.0283995-0.2331009,0.0469999V5.0228
 		C49.7777481,2.253,47.4731483,0,44.6398468,0h-34.422596C7.3839517,0,5.0793519,2.253,5.0793519,5.0228v46.8432999
 		c0,2.7697983,2.3045998,5.0228004,5.1378999,5.0228004h6.0367002v2.2678986C16.253952,61.8274002,18.4702511,64,21.1954517,64

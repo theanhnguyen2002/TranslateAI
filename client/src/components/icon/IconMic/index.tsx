@@ -16,8 +16,8 @@ export const IconMic = (props: IconProps) => {
         height={height}
       >
         <path
-          fill={color}
-          stroke="currentColor"
+          fill="none"
+          stroke={color}
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="32"
@@ -26,7 +26,7 @@ export const IconMic = (props: IconProps) => {
         <path
           d="M256 64a63.68 63.68 0 00-64 64v111c0 35.2 29 65 64 65s64-29 64-65V128c0-36-28-64-64-64z"
           fill="none"
-          stroke="currentColor"
+          stroke={color}
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="32"
