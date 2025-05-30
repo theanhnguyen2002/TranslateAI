@@ -1,6 +1,6 @@
-# HimaSystem
+# TranslateAI
 
-HimaSystem là hệ thống quản lý toàn diện hỗ trợ tối ưu quy trình làm việc.
+TranslateAI là hệ thống quản lý toàn diện hỗ trợ tối ưu quy trình làm việc.
 
 ## 🚀 Bắt đầu
 
