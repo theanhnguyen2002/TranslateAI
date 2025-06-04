@@ -13,7 +13,7 @@ const TranslateDocumentPage = lazy(
   () => import("../page/TranslateDocumentPage/index")
 );
 const TranslateChatPage = lazy(
-  () => import("../page/TranslatePhotoPage/index")
+  () => import("../page/TranslateChatPage/index")
 );
 
 function App() {
