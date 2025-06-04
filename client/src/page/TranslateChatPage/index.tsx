@@ -26,7 +26,7 @@ const TranslateChatPage = (props: Props) => {
   const recognitionRef = useRef<any>(null);
   const [isOpenLang1, setIsOpenLang1] = useState(false);
   const [isOpenLang2, setIsOpenLang2] = useState(false);
-
+  const [autoSpeak, setAutoSpeak] = useState(true);
 
   const swapLanguages = () => {
     setSelectedLang1(selectedLang2);
@@ -51,6 +51,12 @@ const TranslateChatPage = (props: Props) => {
       speechSynthesis.speak(utterance);
       setIsSpeaking(true);
     }
+  };
+
+  const stopSpeaking = () => {
+    speechSynthesis.cancel();
+    setIsSpeakingText(false);
+    setIsSpeakingTranslated(false);
   };
 
   const toggleListening = () => {
@@ -97,12 +103,17 @@ const TranslateChatPage = (props: Props) => {
         );
 
         const data = await response.json();
-        setTranslatedText(
-          data[0].map((item: any) => item[0]).join("") || "Không thể dịch"
-        );
+        const translated = data[0].map((item: any) => item[0]).join("") || "Không thể dịch";
+        setTranslatedText(translated);
+
+        // Auto speak translated text if enabled
+        if (autoSpeak && translated !== "Không thể dịch") {
+          speakText(translated, selectedLang2, "translated");
+        }
       } catch (error) {
         console.error("Lỗi dịch thuật:", error);
         setTranslatedText("Lỗi dịch thuật");
+        toast.error("Lỗi khi dịch văn bản");
       } finally {
         setLoading(false);
       }
@@ -110,7 +121,7 @@ const TranslateChatPage = (props: Props) => {
 
     const timeoutId = setTimeout(fetchTranslation, 500);
     return () => clearTimeout(timeoutId);
-  }, [text, selectedLang1, selectedLang2]);
+  }, [text, selectedLang1, selectedLang2, autoSpeak]);
 
   const fetchTransliteration = async (text: string, lang: string) => {
     if (!text || !lang) return;
@@ -148,16 +159,14 @@ const TranslateChatPage = (props: Props) => {
     }
   }, [translatedText, selectedLang2]);
 
-
-
   return (
-    <div className={`${s.rainbow_bg} justify-center items-center min-h-screen`}>
+    <div className={`${s.rainbow_bg} justify-center items-center h-screen overflow-y-auto`}>
       <div className="header">
         <Header />
       </div>
       <div className="w-full flex justify-content-center">
         <div className="sm:flex gap-2 sm:gap-5 w-[85%] h-[500px] sm:h-[350px] mt-[92px]">
-          <div className="w-full h-full">
+          <div className="w-full h-full mb-10 md:mb-0">
             <div className="flex px-3">
               <div className="flex">
                 <Button>
@@ -183,6 +192,7 @@ const TranslateChatPage = (props: Props) => {
                         <li key={lang.code}>
                           <button
                             onClick={() => {
+                              stopSpeaking();
                               setSelectedLang1(lang.code);
                               setIsOpenLang1(false);
                             }}
@@ -220,11 +230,10 @@ const TranslateChatPage = (props: Props) => {
                 </button>
               )}
               <div className="absolute bottom-2 right-4 text-gray-500 text-sm">
-                {text.split(/\s+/).filter(Boolean).length} từ • {text.length}
-                /5.000 ký tự
+                {text.split(/\s+/).filter(Boolean).length} từ • {text.length}/5.000 ký tự
               </div>
               <button
-                className={`absolute bottom-2 left-2 p-1 rounded-full ${isListening
+                className={`absolute bottom-2 left-2 p-1 rounded-full sm:block hidden ${isListening
                   ? "bg-[#2a86ff] hover:bg-[#026efa]"
                   : "bg-gray-200 hover:bg-gray-300"
                   }`}
@@ -248,6 +257,24 @@ const TranslateChatPage = (props: Props) => {
           >
             <IconArrowLeftRight width="24px" height="24px" />
           </div>
+          {/* Fixed mic button for mobile */}
+          <button
+            className={`fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-full shadow-lg sm:hidden z-50 ${
+              isListening ? "bg-[#2a86ff] hover:bg-[#026efa]" : "bg-white hover:bg-gray-100"
+            }`}
+            onClick={toggleListening}
+          >
+            {isListening ? (
+              <div className="relative">
+                <IconStop width="24px" height="24px" color="#ffffff" />
+                <div className="absolute -inset-1 rounded-full border border-[#2a86ff] animate-ping opacity-75"></div>
+                <div className="absolute -inset-2 rounded-full border border-[#2a86ff] animate-ping opacity-50" style={{ animationDelay: '0.2s' }}></div>
+                <div className="absolute -inset-3 rounded-full border border-[#2a86ff] animate-ping opacity-25" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            ) : (
+              <IconMic width="24px" height="24px" color="#3a79cb" />
+            )}
+          </button>
           <div className="w-full h-full">
             <div className="flex gap-2 px-3">
               <div className="relative inline-block">
@@ -268,6 +295,7 @@ const TranslateChatPage = (props: Props) => {
                         <li key={lang.code}>
                           <button
                             onClick={() => {
+                              stopSpeaking();
                               setSelectedLang2(lang.code);
                               setIsOpenLang2(false);
                             }}
@@ -282,7 +310,19 @@ const TranslateChatPage = (props: Props) => {
                 )}
               </div>
             </div>
+            
             <div className="relative w-full h-full">
+              <div className="absolute top-2 right-2 flex items-center gap-2 px-3 mt-2">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={autoSpeak}
+                    onChange={(e) => setAutoSpeak(e.target.checked)}
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                  />
+                  Tự động phát âm bản dịch
+                </label>
+              </div>
               <div className="w-full h-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                 <textarea
                   className="w-full h-full resize-none outline-none"
