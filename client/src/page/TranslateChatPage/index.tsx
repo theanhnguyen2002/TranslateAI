@@ -252,12 +252,12 @@ const TranslateChatPage = (props: Props) => {
         <Header />
       </div>
       <div className="w-full flex justify-content-center">
-        <div className="sm:flex gap-2 sm:gap-5 w-[85%] h-[500px] sm:h-[350px] mt-[92px]">
-          <div className="w-full h-full">
+        <div className="sm:flex gap-2 sm:gap-5 w-[85%] h-[500px] sm:h-[350px] mt-[22px] sm:mt-[92px]">
+          <div className="w-full sm:h-full h-[50%]">
             <div className="flex px-3">
               <div className="flex">
                 <Button>
-                  <p className="text-[#035acb] m-auto">Phát hiện ngôn ngữ</p>
+                  <p className="text-[#035acb] m-auto sm:text-[14px] text-[12px]">Phát hiện ngôn ngữ</p>
                 </Button>
               </div>
               <div className="border-b-2 border-[#035acb]"></div>
@@ -293,7 +293,7 @@ const TranslateChatPage = (props: Props) => {
                 )}
               </div>
             </div>
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full h-full">
               <div className="w-full h-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                 <textarea
                   className="w-full h-full resize-none outline-none"
@@ -385,12 +385,12 @@ const TranslateChatPage = (props: Props) => {
             </div>
           </div>
           <div
-            className="flex sm:items-center justify-content-center"
+            className="flex sm:items-center justify-content-center sm:mt-[0px] mt-[70px]"
             onClick={swapLanguages}
           >
             <IconArrowLeftRight width="24px" height="24px" />
           </div>
-          <div className="w-full h-full">
+          <div className="w-full sm:h-full h-[50%] sm:mt-[0px] mt-[20px]">
             <div className="flex gap-2 px-3">
               <div className="relative inline-block">
                 <button
