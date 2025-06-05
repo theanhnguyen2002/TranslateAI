@@ -11,6 +11,33 @@ import { IconStop } from "../../components/icon/IconStop";
 import { IconCopy } from "../../components/icon/IconCopy";
 import { toast } from "react-toastify";
 
+const WaveAnimation = ({ isActive }: { isActive: boolean }) => {
+  if (!isActive) return null;
+  
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="relative w-12 h-12">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute inset-0 border-2 border-blue-500 rounded-full animate-ping"
+            style={{
+              animationDelay: `${i * 0.2}s`,
+              opacity: 0.3,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const DisabledOverlay = () => (
+  <div className="absolute inset-0 bg-gray-400 bg-opacity-50 rounded-full flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
+
 type Props = {};
 
 const TranslateChatPage = (props: Props) => {
@@ -20,13 +47,30 @@ const TranslateChatPage = (props: Props) => {
   const [text, setText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [isListening1, setIsListening1] = useState(false); // Mic 1
+  const [isListening2, setIsListening2] = useState(false); // Mic 2
   const [isSpeakingText, setIsSpeakingText] = useState(false);
   const [isSpeakingTranslated, setIsSpeakingTranslated] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef1 = useRef<any>(null); // Reference for Mic 1
+  const recognitionRef2 = useRef<any>(null); // Reference for Mic 2
   const [isOpenLang1, setIsOpenLang1] = useState(false);
   const [isOpenLang2, setIsOpenLang2] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    // Load voices
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+    };
+
+    // Chrome loads voices asynchronously
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+  }, []);
 
   const swapLanguages = () => {
     setSelectedLang1(selectedLang2);
@@ -42,12 +86,28 @@ const TranslateChatPage = (props: Props) => {
     const setIsSpeaking = type === "text" ? setIsSpeakingText : setIsSpeakingTranslated;
 
     if (isSpeaking) {
-      speechSynthesis.cancel(); // Dừng giọng đọc
+      speechSynthesis.cancel();
       setIsSpeaking(false);
     } else {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang;
-      utterance.onend = () => setIsSpeaking(false); // Cập nhật trạng thái khi đọc xong
+      
+      // Find appropriate voice based on language
+      if (lang === "vi") {
+        // Try to find Vietnamese voice
+        const vietnameseVoice = voices.find(voice => voice.lang.includes("vi"));
+        if (vietnameseVoice) {
+          utterance.voice = vietnameseVoice;
+        }
+      } else if (lang === "en") {
+        // Try to find English voice
+        const englishVoice = voices.find(voice => voice.lang.includes("en"));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+      }
+
+      utterance.onend = () => setIsSpeaking(false);
       speechSynthesis.speak(utterance);
       setIsSpeaking(true);
     }
@@ -59,31 +119,62 @@ const TranslateChatPage = (props: Props) => {
     setIsSpeakingTranslated(false);
   };
 
-  const toggleListening = () => {
+  const toggleListening = (mic: 1 | 2) => {
     if (!("webkitSpeechRecognition" in window)) {
       alert("Trình duyệt không hỗ trợ nhận diện giọng nói!");
       return;
     }
 
-    if (!isListening) {
+    if (mic === 1 && !isListening1) {
+      setText(""); // Clear input when starting to listen
+      setTranslatedText(""); // Clear translated text
+      setTransliteratedText(""); // Clear transliterated text
+      setSelectedLang1("vi"); // Set source language to Vietnamese
+      setSelectedLang2("en"); // Set target language to English
       const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = selectedLang1;
+      recognition.lang = "vi-VN"; // Set recognition language to Vietnamese
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
-      recognition.onstart = () => setIsListening(true);
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
+      recognition.onstart = () => setIsListening1(true);
+      recognition.onerror = () => setIsListening1(false);
+      recognition.onend = () => setIsListening1(false);
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setText((prevText) => prevText + " " + transcript);
       };
 
-      recognitionRef.current = recognition;
+      recognitionRef1.current = recognition;
+      recognition.start();
+    } else if (mic === 2 && !isListening2) {
+      setText(""); // Clear input when starting to listen
+      setTranslatedText(""); // Clear translated text
+      setTransliteratedText(""); // Clear transliterated text
+      setSelectedLang1("en"); // Set source language to English
+      setSelectedLang2("vi"); // Set target language to Vietnamese
+      const recognition = new (window as any).webkitSpeechRecognition();
+      recognition.lang = "en-US"; // Set recognition language to English
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => setIsListening2(true);
+      recognition.onerror = () => setIsListening2(false);
+      recognition.onend = () => setIsListening2(false);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setText((prevText) => prevText + " " + transcript);
+      };
+
+      recognitionRef2.current = recognition;
       recognition.start();
     } else {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+      if (mic === 1) {
+        recognitionRef1.current?.stop();
+        setIsListening1(false);
+      } else if (mic === 2) {
+        recognitionRef2.current?.stop();
+        setIsListening2(false);
+      }
     }
   };
 
@@ -103,17 +194,12 @@ const TranslateChatPage = (props: Props) => {
         );
 
         const data = await response.json();
-        const translated = data[0].map((item: any) => item[0]).join("") || "Không thể dịch";
-        setTranslatedText(translated);
-
-        // Auto speak translated text if enabled
-        if (autoSpeak && translated !== "Không thể dịch") {
-          speakText(translated, selectedLang2, "translated");
-        }
+        setTranslatedText(
+          data[0].map((item: any) => item[0]).join("") || "Không thể dịch"
+        );
       } catch (error) {
         console.error("Lỗi dịch thuật:", error);
         setTranslatedText("Lỗi dịch thuật");
-        toast.error("Lỗi khi dịch văn bản");
       } finally {
         setLoading(false);
       }
@@ -121,7 +207,7 @@ const TranslateChatPage = (props: Props) => {
 
     const timeoutId = setTimeout(fetchTranslation, 500);
     return () => clearTimeout(timeoutId);
-  }, [text, selectedLang1, selectedLang2, autoSpeak]);
+  }, [text, selectedLang1, selectedLang2]);
 
   const fetchTransliteration = async (text: string, lang: string) => {
     if (!text || !lang) return;
@@ -131,17 +217,15 @@ const TranslateChatPage = (props: Props) => {
         `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${selectedLang1}&tl=${selectedLang2}&dt=t&dt=rm&q=${encodeURIComponent(text)}`
       );
       const data = await response.json();
-      console.log("API Response:", data); // Kiểm tra phản hồi từ API
 
       if (data[0]) {
-        // Lấy văn bản đã dịch
         const translatedText = data[0].map((item: any) => item[0]).join("");
         setTranslatedText(translatedText);
 
-        // Lấy phiên âm (transliteration)
-        const transliteration = data[0].map((item: any) => item[3] || "").join(" ");
+        const transliteration = data[0]
+          .map((item: any) => item[3] || "")
+          .join(" ");
         setTransliteratedText(transliteration || "Không có phiên âm có sẵn");
-        console.log("first", transliteration)
       } else {
         setTranslatedText("Không thể dịch.");
         setTransliteratedText("Không có phiên âm có sẵn");
@@ -156,8 +240,11 @@ const TranslateChatPage = (props: Props) => {
   useEffect(() => {
     if (translatedText && selectedLang2) {
       fetchTransliteration(translatedText, selectedLang2);
+      if (autoSpeak) {
+        speakText(translatedText, selectedLang2, "translated");
+      }
     }
-  }, [translatedText, selectedLang2]);
+  }, [translatedText, selectedLang2, autoSpeak]);
 
   return (
     <div className={`${s.rainbow_bg} justify-center items-center h-screen overflow-y-auto`}>
@@ -166,7 +253,7 @@ const TranslateChatPage = (props: Props) => {
       </div>
       <div className="w-full flex justify-content-center">
         <div className="sm:flex gap-2 sm:gap-5 w-[85%] h-[500px] sm:h-[350px] mt-[92px]">
-          <div className="w-full h-full mb-10 md:mb-0">
+          <div className="w-full h-full">
             <div className="flex px-3">
               <div className="flex">
                 <Button>
@@ -184,7 +271,6 @@ const TranslateChatPage = (props: Props) => {
                     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m1 1 4 4 4-4" />
                   </svg>
                 </button>
-                {/* Dropdown menu */}
                 {isOpenLang1 && (
                   <div className="absolute z-10 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 mt-1">
                     <ul className="max-h-96 overflow-y-auto py-2 pl-0 text-sm text-gray-700">
@@ -232,15 +318,62 @@ const TranslateChatPage = (props: Props) => {
               <div className="absolute bottom-2 right-4 text-gray-500 text-sm">
                 {text.split(/\s+/).filter(Boolean).length} từ • {text.length}/5.000 ký tự
               </div>
-              <button
-                className={`absolute bottom-2 left-2 p-1 rounded-full sm:block hidden ${isListening
-                  ? "bg-[#2a86ff] hover:bg-[#026efa]"
-                  : "bg-gray-200 hover:bg-gray-300"
-                  }`}
-                onClick={toggleListening}
-              >
-                {isListening ? <IconStop width="22px" height="22px" color="#ffffff" /> : <IconMic width="22px" height="22px" color="#3a79cb" />}
-              </button>
+              <div className="absolute bottom-2 left-2">
+                <div className="relative">
+                  <button
+                    className={`fixed left-4 bottom-2 p-3 rounded-full shadow-lg z-50 transition-all duration-200 ${
+                      isListening1 
+                        ? 'bg-[#2a86ff] hover:bg-[#1a76ef]' 
+                        : !("webkitSpeechRecognition" in window)
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-gray-200 hover:bg-gray-300 cursor-pointer'
+                    }`}
+                    onClick={() => toggleListening(1)}
+                    disabled={!("webkitSpeechRecognition" in window)}
+                    title={!("webkitSpeechRecognition" in window) ? "Trình duyệt không hỗ trợ nhận diện giọng nói" : "Nhấn để nói tiếng Việt"}
+                  >
+                    {isListening1 ? (
+                      <IconStop width="24px" height="24px" color="#fff" />
+                    ) : (
+                      <IconMic 
+                        width="24px" 
+                        height="24px" 
+                        color={!("webkitSpeechRecognition" in window) ? "#ffffff" : "#3a79cb"} 
+                      />
+                    )}
+                  </button>
+                  {!("webkitSpeechRecognition" in window) && <DisabledOverlay />}
+                  <WaveAnimation isActive={isListening1} />
+                </div>
+              </div>
+              <div className="absolute bottom-2 right-2">
+                <div className="relative">
+                  <button
+                    className={`fixed right-4 bottom-2 p-3 rounded-full shadow-lg z-50 transition-all duration-200 ${
+                      isListening2 
+                        ? 'bg-[#2a86ff] hover:bg-[#1a76ef]' 
+                        : !("webkitSpeechRecognition" in window)
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-gray-200 hover:bg-gray-300 cursor-pointer'
+                    }`}
+                    onClick={() => toggleListening(2)}
+                    disabled={!("webkitSpeechRecognition" in window)}
+                    title={!("webkitSpeechRecognition" in window) ? "Trình duyệt không hỗ trợ nhận diện giọng nói" : "Nhấn để nói tiếng Anh"}
+                  >
+                    {isListening2 ? (
+                      <IconStop width="24px" height="24px" color="#fff" />
+                    ) : (
+                      <IconMic 
+                        width="24px" 
+                        height="24px" 
+                        color={!("webkitSpeechRecognition" in window) ? "#ffffff" : "#3a79cb"} 
+                      />
+                    )}
+                  </button>
+                  {!("webkitSpeechRecognition" in window) && <DisabledOverlay />}
+                  <WaveAnimation isActive={isListening2} />
+                </div>
+              </div>
               {text && (
                 <button
                   className="absolute bottom-2 left-11 bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded-full"
@@ -257,24 +390,6 @@ const TranslateChatPage = (props: Props) => {
           >
             <IconArrowLeftRight width="24px" height="24px" />
           </div>
-          {/* Fixed mic button for mobile */}
-          <button
-            className={`fixed bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-full shadow-lg sm:hidden z-50 ${
-              isListening ? "bg-[#2a86ff] hover:bg-[#026efa]" : "bg-white hover:bg-gray-100"
-            }`}
-            onClick={toggleListening}
-          >
-            {isListening ? (
-              <div className="relative">
-                <IconStop width="24px" height="24px" color="#ffffff" />
-                <div className="absolute -inset-1 rounded-full border border-[#2a86ff] animate-ping opacity-75"></div>
-                <div className="absolute -inset-2 rounded-full border border-[#2a86ff] animate-ping opacity-50" style={{ animationDelay: '0.2s' }}></div>
-                <div className="absolute -inset-3 rounded-full border border-[#2a86ff] animate-ping opacity-25" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            ) : (
-              <IconMic width="24px" height="24px" color="#3a79cb" />
-            )}
-          </button>
           <div className="w-full h-full">
             <div className="flex gap-2 px-3">
               <div className="relative inline-block">
@@ -357,7 +472,7 @@ const TranslateChatPage = (props: Props) => {
           </div>
         </div>
       </div>
-    </div >
+    </div>
   );
 };
 
