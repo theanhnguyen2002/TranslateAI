@@ -111,22 +111,24 @@ const TranslatePage = (props: Props) => {
 
   const fetchTransliterationData = async (text: string, lang: string) => {
     if (!text || !lang) return;
-
     try {
       const result = await fetchTransliteration(text, selectedLang1, selectedLang2);
-      setTranslatedText(result.translatedText);
       setTransliteratedText(result.transliteration);
     } catch (error) {
-      console.error("Lỗi dịch thuật:", error);
-      setTranslatedText("Lỗi dịch.");
       setTransliteratedText("Lỗi lấy phiên âm.");
     }
   };
 
   useEffect(() => {
-    if (translatedText && selectedLang2) {
-      fetchTransliterationData(translatedText, selectedLang2);
+    if (
+      !translatedText ||
+      !selectedLang2 ||
+      translatedText === "Không thể dịch" ||
+      translatedText === "Lỗi dịch thuật"
+    ) {
+      return;
     }
+    fetchTransliterationData(translatedText, selectedLang2);
   }, [translatedText, selectedLang2]);
 
   return (

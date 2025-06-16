@@ -58,6 +58,9 @@ const TranslateChatPage = (props: Props) => {
   const [isOpenLang2, setIsOpenLang2] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [originalLang1, setOriginalLang1] = useState(selectedLang1);
+  const [originalLang2, setOriginalLang2] = useState(selectedLang2);
+  const [activeMic, setActiveMic] = useState<1 | 2 | null>(null);
 
   useEffect(() => {
     // Load voices
@@ -72,6 +75,11 @@ const TranslateChatPage = (props: Props) => {
     }
     loadVoices();
   }, []);
+
+  useEffect(() => {
+    setOriginalLang1(selectedLang1);
+    setOriginalLang2(selectedLang2);
+  }, [selectedLang1, selectedLang2]);
 
   const swapLanguages = () => {
     setSelectedLang1(selectedLang2);
@@ -126,113 +134,89 @@ const TranslateChatPage = (props: Props) => {
       return;
     }
 
-    if (mic === 1 && !isListening1) {
-      setText("");
-      setTranslatedText("");
-      setTransliteratedText("");
+    setText("");
+    setTranslatedText("");
+    setTransliteratedText("");
+    setActiveMic(mic);
 
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = selectedLang1 === "vi" ? "vi-VN" : "en-US"; // dùng đúng ngôn ngữ đang chọn
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => setIsListening1(true);
-      recognition.onerror = () => setIsListening1(false);
-      recognition.onend = () => setIsListening1(false);
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setText((prevText) => prevText + " " + transcript);
-      };
-
-      recognitionRef1.current = recognition;
-      recognition.start();
-    } else if (mic === 2 && !isListening2) {
-      setText("");
-      setTranslatedText("");
-      setTransliteratedText("");
-
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = selectedLang2 === "vi" ? "vi-VN" : "en-US"; // dùng đúng ngôn ngữ đang chọn
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => setIsListening2(true);
-      recognition.onerror = () => setIsListening2(false);
-      recognition.onend = () => setIsListening2(false);
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setText((prevText) => prevText + " " + transcript);
-      };
-
-      recognitionRef2.current = recognition;
-      recognition.start();
-    } else {
-      if (mic === 1) {
-        recognitionRef1.current?.stop();
-        setIsListening1(false);
-      } else if (mic === 2) {
-        recognitionRef2.current?.stop();
-        setIsListening2(false);
-      }
-    }
-  };
-
-  const fetchGoogleTranslate = async (text: string, sl: string, tl: string, dt: string[] = ["t"]) => {
-    if (!text || !sl || !tl) return null;
-    try {
-      const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=${dt.join("&dt=")}&q=${encodeURIComponent(text)}`
-      );
-      return await response.json();
-    } catch (error) {
-      console.error("Lỗi dịch thuật:", error);
-      return null;
-    }
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = (mic === 1
+      ? (selectedLang1 === "vi" ? "vi-VN" : "en-US")
+      : (selectedLang2 === "vi" ? "vi-VN" : "en-US"));
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => {
+      if (mic === 1) setIsListening1(true);
+      else setIsListening2(true);
+    };
+    recognition.onerror = () => {
+      if (mic === 1) setIsListening1(false);
+      else setIsListening2(false);
+    };
+    recognition.onend = () => {
+      if (mic === 1) setIsListening1(false);
+      else setIsListening2(false);
+    };
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setText(transcript);
+    };
+    if (mic === 1) recognitionRef1.current = recognition;
+    else recognitionRef2.current = recognition;
+    recognition.start();
   };
 
   useEffect(() => {
-    if (!text.trim()) {
+    if (!text.trim() || !activeMic) {
       setTranslatedText("");
       return;
     }
-
+    let sl = selectedLang1, tl = selectedLang2, speakLang = selectedLang2;
+    if (activeMic === 2) {
+      sl = selectedLang2;
+      tl = selectedLang1;
+      speakLang = selectedLang1;
+    }
     const fetchTranslationData = async () => {
       setLoading(true);
       try {
-        const result = await fetchTranslation(text, selectedLang1, selectedLang2);
+        const result = await fetchTranslation(text, sl, tl);
         setTranslatedText(result);
+        if (autoSpeak) {
+          speakText(result, speakLang, "translated");
+        }
       } catch (error) {
-        console.error("Lỗi dịch thuật:", error);
-        setTranslatedText("Lỗi dịch thuật");
+        setTranslatedText("Không thể dịch");
       } finally {
         setLoading(false);
       }
     };
-
     const timeoutId = setTimeout(fetchTranslationData, 500);
     return () => clearTimeout(timeoutId);
-  }, [text, selectedLang1, selectedLang2]);
+  }, [text, activeMic, selectedLang1, selectedLang2, autoSpeak]);
 
   const fetchTransliterationData = async (text: string, lang: string) => {
     if (!text || !lang) return;
-
     try {
       const result = await fetchTransliteration(text, selectedLang1, selectedLang2);
-      setTranslatedText(result.translatedText);
       setTransliteratedText(result.transliteration);
     } catch (error) {
-      console.error("Lỗi dịch thuật:", error);
-      setTranslatedText("Lỗi dịch.");
       setTransliteratedText("Lỗi lấy phiên âm.");
     }
   };
 
   useEffect(() => {
-    if (translatedText && selectedLang2) {
-      fetchTransliterationData(translatedText, selectedLang2);
-      if (autoSpeak) {
-        speakText(translatedText, selectedLang2, "translated");
-      }
+    if (
+      !translatedText ||
+      !selectedLang2 ||
+      translatedText === "Không thể dịch" ||
+      translatedText === "Lỗi dịch thuật"
+    ) {
+      return;
+    }
+    fetchTransliterationData(translatedText, selectedLang2);
+    if (autoSpeak) {
+      speakText(translatedText, selectedLang2, "translated");
     }
   }, [translatedText, selectedLang2, autoSpeak]);
 

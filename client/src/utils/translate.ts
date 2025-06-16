@@ -2,7 +2,18 @@ export const fetchGoogleTranslate = async (text: string, sl: string, tl: string,
   if (!text || !sl || !tl) return null;
   try {
     const response = await fetch(
-      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=${dt.join("&dt=")}&q=${encodeURIComponent(text)}`
+      'https://mjhacyvdxd.execute-api.ap-southeast-1.amazonaws.com/translate',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          sourceLang: sl,
+          targetLang: tl,
+        }),
+      }
     );
     return await response.json();
   } catch (error) {
@@ -13,8 +24,8 @@ export const fetchGoogleTranslate = async (text: string, sl: string, tl: string,
 
 export const fetchTranslation = async (text: string, sl: string, tl: string) => {
   const data = await fetchGoogleTranslate(text, sl, tl);
-  if (data && data[0]) {
-    return data[0].map((item: any) => item[0]).join("") || "Không thể dịch";
+  if (data && data.translatedText) {
+    return data.translatedText;
   }
   return "Không thể dịch";
 };
