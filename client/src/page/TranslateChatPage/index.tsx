@@ -10,6 +10,7 @@ import { IconMic } from "../../components/icon/IconMic";
 import { IconStop } from "../../components/icon/IconStop";
 import { IconCopy } from "../../components/icon/IconCopy";
 import { toast } from "react-toastify";
+import { fetchTranslation, fetchTransliteration } from "../../utils/translate";
 
 const WaveAnimation = ({ isActive }: { isActive: boolean }) => {
   if (!isActive) return null;
@@ -176,25 +177,30 @@ const TranslateChatPage = (props: Props) => {
     }
   };
 
+  const fetchGoogleTranslate = async (text: string, sl: string, tl: string, dt: string[] = ["t"]) => {
+    if (!text || !sl || !tl) return null;
+    try {
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=${dt.join("&dt=")}&q=${encodeURIComponent(text)}`
+      );
+      return await response.json();
+    } catch (error) {
+      console.error("Lỗi dịch thuật:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (!text.trim()) {
       setTranslatedText("");
       return;
     }
 
-    const fetchTranslation = async () => {
+    const fetchTranslationData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(
-          `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${selectedLang1}&tl=${selectedLang2}&dt=t&q=${encodeURIComponent(
-            text
-          )}`
-        );
-
-        const data = await response.json();
-        setTranslatedText(
-          data[0].map((item: any) => item[0]).join("") || "Không thể dịch"
-        );
+        const result = await fetchTranslation(text, selectedLang1, selectedLang2);
+        setTranslatedText(result);
       } catch (error) {
         console.error("Lỗi dịch thuật:", error);
         setTranslatedText("Lỗi dịch thuật");
@@ -203,31 +209,17 @@ const TranslateChatPage = (props: Props) => {
       }
     };
 
-    const timeoutId = setTimeout(fetchTranslation, 500);
+    const timeoutId = setTimeout(fetchTranslationData, 500);
     return () => clearTimeout(timeoutId);
   }, [text, selectedLang1, selectedLang2]);
 
-  const fetchTransliteration = async (text: string, lang: string) => {
+  const fetchTransliterationData = async (text: string, lang: string) => {
     if (!text || !lang) return;
 
     try {
-      const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${selectedLang1}&tl=${selectedLang2}&dt=t&dt=rm&q=${encodeURIComponent(text)}`
-      );
-      const data = await response.json();
-
-      if (data[0]) {
-        const translatedText = data[0].map((item: any) => item[0]).join("");
-        setTranslatedText(translatedText);
-
-        const transliteration = data[0]
-          .map((item: any) => item[3] || "")
-          .join(" ");
-        setTransliteratedText(transliteration || "Không có phiên âm có sẵn");
-      } else {
-        setTranslatedText("Không thể dịch.");
-        setTransliteratedText("Không có phiên âm có sẵn");
-      }
+      const result = await fetchTransliteration(text, selectedLang1, selectedLang2);
+      setTranslatedText(result.translatedText);
+      setTransliteratedText(result.transliteration);
     } catch (error) {
       console.error("Lỗi dịch thuật:", error);
       setTranslatedText("Lỗi dịch.");
@@ -237,7 +229,7 @@ const TranslateChatPage = (props: Props) => {
 
   useEffect(() => {
     if (translatedText && selectedLang2) {
-      fetchTransliteration(translatedText, selectedLang2);
+      fetchTransliterationData(translatedText, selectedLang2);
       if (autoSpeak) {
         speakText(translatedText, selectedLang2, "translated");
       }
