@@ -27,4 +27,4 @@ export const fetchTransliteration = async (text: string, sl: string, tl: string)
     return { translatedText, transliteration: transliteration || "Không có phiên âm có sẵn" };
   }
   return { translatedText: "Không thể dịch.", transliteration: "Không có phiên âm có sẵn" };
-}; 
+};

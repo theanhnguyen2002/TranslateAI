@@ -1,16 +1,16 @@
+import { Button } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
 import { IconClose } from "../../components/icon/IconClose";
-import Header from "../../layout/header";
-import { languages } from "../../utils/languages";
-import s from "./style.module.scss";
-import { Button } from "@mui/material";
-import { IconVolume } from "../../components/icon/IconVolume";
+import { IconCopy } from "../../components/icon/IconCopy";
 import { IconMic } from "../../components/icon/IconMic";
 import { IconStop } from "../../components/icon/IconStop";
-import { IconCopy } from "../../components/icon/IconCopy";
-import { toast } from "react-toastify";
+import { IconVolume } from "../../components/icon/IconVolume";
+import Header from "../../layout/header";
+import { languages } from "../../utils/languages";
 import { fetchTranslation, fetchTransliteration } from "../../utils/translate";
+import s from "./style.module.scss";
 
 type Props = {};
 

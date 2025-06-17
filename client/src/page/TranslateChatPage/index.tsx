@@ -1,16 +1,16 @@
+import { Button } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
 import { IconClose } from "../../components/icon/IconClose";
-import Header from "../../layout/header";
-import { languages } from "../../utils/languages";
-import s from "./style.module.scss";
-import { Button } from "@mui/material";
-import { IconVolume } from "../../components/icon/IconVolume";
+import { IconCopy } from "../../components/icon/IconCopy";
 import { IconMic } from "../../components/icon/IconMic";
 import { IconStop } from "../../components/icon/IconStop";
-import { IconCopy } from "../../components/icon/IconCopy";
-import { toast } from "react-toastify";
+import { IconVolume } from "../../components/icon/IconVolume";
+import Header from "../../layout/header";
+import { languages } from "../../utils/languages";
 import { fetchTranslation, fetchTransliteration } from "../../utils/translate";
+import s from "./style.module.scss";
 
 const WaveAnimation = ({ isActive }: { isActive: boolean }) => {
   if (!isActive) return null;
@@ -174,19 +174,6 @@ const TranslateChatPage = (props: Props) => {
         recognitionRef2.current?.stop();
         setIsListening2(false);
       }
-    }
-  };
-
-  const fetchGoogleTranslate = async (text: string, sl: string, tl: string, dt: string[] = ["t"]) => {
-    if (!text || !sl || !tl) return null;
-    try {
-      const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=${dt.join("&dt=")}&q=${encodeURIComponent(text)}`
-      );
-      return await response.json();
-    } catch (error) {
-      console.error("Lỗi dịch thuật:", error);
-      return null;
     }
   };
 
