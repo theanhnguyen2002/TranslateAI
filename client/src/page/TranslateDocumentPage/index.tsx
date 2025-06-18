@@ -1,141 +1,150 @@
 import React, { useState } from "react";
 import s from "./style.module.scss";
 import Header from "../../layout/header";
-import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
 import { Button } from "@mui/material";
+import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
+import mammoth from "mammoth";
+import * as pdfjsLib from "pdfjs-dist";
+// import "pdfjs-dist/build/pdf.worker.entry"; // Bắt buộc nếu dùng Webpack
+import { fetchGoogleTranslate } from "../../utils/translate"; // Giả sử bạn đã có
 
-type Props = {};
+const languages = [
+  { code: "vi", name: "Tiếng Việt" },
+  { code: "en", name: "English" },
+  { code: "ja", name: "Tiếng Nhật" },
+  { code: "ko", name: "Tiếng Hàn" },
+  { code: "zh", name: "Tiếng Trung" },
+  // ... thêm nếu cần
+];
 
-const TranslateDocumentPage = (props: Props) => {
-  const [selectedLang1, setSelectedLang1] = useState("vi");
-  const [selectedLang2, setSelectedLang2] = useState("en");
+const TranslateDocumentPage = () => {
+  const [sourceLang, setSourceLang] = useState("vi");
+  const [targetLang, setTargetLang] = useState("en");
+  const [fileText, setFileText] = useState<string | null>(null);
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+
+  const handleUploadDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+
+    if (fileExt === "txt") {
+      const text = await file.text();
+      setFileText(text);
+    } else if (fileExt === "docx") {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      setFileText(result.value);
+    } else if (fileExt === "pdf") {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map((item: any) => item.str).join(" ") + "\n";
+      }
+      setFileText(text);
+    } else {
+      alert("Định dạng không hỗ trợ. Vui lòng tải PDF, DOCX hoặc TXT.");
+    }
+  };
+
+  const handleTranslateDocument = async () => {
+    if (!fileText) {
+      alert("Bạn chưa tải tài liệu nào.");
+      return;
+    }
+
+    try {
+      const translated = await fetchGoogleTranslate(fileText, sourceLang, targetLang);
+      setTranslatedText(translated);
+    } catch (error) {
+      alert("Lỗi khi dịch tài liệu.");
+    }
+  };
+
   return (
     <div className={`${s.rainbow_bg} justify-center items-center min-h-screen`}>
       <div className="header">
         <Header />
       </div>
       <div className="w-full flex justify-content-center">
-        <div className="sm:flex gap-2 sm:gap-5 w-[85%] h-[500px] sm:h-[350px] mt-[92px]">
-          <div className="w-full h-full">
-            <div className="flex gap-2">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white py-10 px-4 sm:px-10">
+          <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6 sm:p-10">
+            <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">📄 Dịch Tài Liệu</h2>
+
+            {/* Tải tệp */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tải tài liệu cần dịch</label>
               <div
-                className={`${
-                  selectedLang1 === "vi" ? "border-b-2 border-[#035acb]" : ""
-                }`}
+                onClick={() => document.getElementById("fileInput")?.click()}
+                className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg py-6 px-4 text-center hover:bg-blue-50 transition"
               >
-                <Button onClick={() => setSelectedLang1("vi")}>
-                  <p
-                    className={`${
-                      selectedLang1 === "vi"
-                        ? "text-[#035acb]"
-                        : "text-[#323232]"
-                    } m-auto`}
-                  >
-                    Tiếng Việt
-                  </p>
-                </Button>
+                <p className="text-gray-600">📂 Nhấn hoặc kéo thả tệp vào đây</p>
+                <p className="text-xs text-gray-400 mt-1">(Hỗ trợ: PDF, DOCX, TXT...)</p>
               </div>
-              <div
-                className={`${
-                  selectedLang1 === "en" ? "border-b-2 border-[#035acb]" : ""
-                }`}
-              >
-                <Button onClick={() => setSelectedLang1("en")}>
-                  <p
-                    className={`${
-                      selectedLang1 === "en"
-                        ? "text-[#035acb]"
-                        : "text-[#323232]"
-                    } m-auto`}
-                  >
-                    Tiếng Anh
-                  </p>
-                </Button>
+              <input
+                id="fileInput"
+                type="file"
+                accept=".pdf,.doc,.docx,.txt"
+                className="hidden"
+                onChange={handleUploadDocument}
+              />
+            </div>
+
+            {/* Chọn ngôn ngữ */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Ngôn ngữ gốc</label>
+                <select
+                  value={sourceLang}
+                  onChange={(e) => setSourceLang(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  {languages.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div
-                className={`${
-                  selectedLang1 === "other" ? "border-b-2 border-[#035acb]" : ""
-                }`}
-              >
-                <Button onClick={() => setSelectedLang1("other")}>
-                  <p
-                    className={`${
-                      selectedLang1 === "other"
-                        ? "text-[#035acb]"
-                        : "text-[#323232]"
-                    } m-auto`}
-                  >
-                    Chọn ngôn ngữ
-                  </p>
-                </Button>
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Dịch sang</label>
+                <select
+                  value={targetLang}
+                  onChange={(e) => setTargetLang(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  {languages.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-            <textarea
-              className="p-4 border-r border-gray-300 w-full h-full resize-none outline-none border border-gray-600 rounded-lg"
-              placeholder="Nhập"
-            />
-          </div>
-          <div className="flex sm:items-center justify-content-center">
-            <IconArrowLeftRight width="24px" height="24px" />
-          </div>
-          <div className="w-full h-full">
-            <div className="flex gap-2">
-              <div
-                className={`${
-                  selectedLang2 === "vi" ? "border-b-2 border-[#035acb]" : ""
-                }`}
+
+            {/* Nút dịch */}
+            <div className="text-center">
+              <button
+                onClick={handleTranslateDocument}
+                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
               >
-                <Button onClick={() => setSelectedLang2("vi")}>
-                  <p
-                    className={`${
-                      selectedLang2 === "vi"
-                        ? "text-[#035acb]"
-                        : "text-[#323232]"
-                    } m-auto`}
-                  >
-                    Tiếng Việt
-                  </p>
-                </Button>
-              </div>
-              <div
-                className={`${
-                  selectedLang2 === "en" ? "border-b-2 border-[#035acb]" : ""
-                }`}
-              >
-                <Button onClick={() => setSelectedLang2("en")}>
-                  <p
-                    className={`${
-                      selectedLang2 === "en"
-                        ? "text-[#035acb]"
-                        : "text-[#323232]"
-                    } m-auto`}
-                  >
-                    Tiếng Anh
-                  </p>
-                </Button>
-              </div>
-              <div
-                className={`${
-                  selectedLang2 === "other" ? "border-b-2 border-[#035acb]" : ""
-                }`}
-              >
-                <Button onClick={() => setSelectedLang2("other")}>
-                  <p
-                    className={`${
-                      selectedLang2 === "other"
-                        ? "text-[#035acb]"
-                        : "text-[#323232]"
-                    } m-auto`}
-                  >
-                    Chọn ngôn ngữ
-                  </p>
-                </Button>
-              </div>
+                🚀 Dịch Ngay
+              </button>
             </div>
-            <textarea
-              className="p-4 w-full h-full resize-none outline-none border border-gray-600 rounded-lg"
-              placeholder="Bản dịch..."
-            />
+
+            {/* Kết quả */}
+            {translatedText && (
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-2 text-gray-700">🔍 Kết quả dịch:</h3>
+                <div className="bg-gray-50 p-4 border rounded-lg max-h-80 overflow-y-auto">
+                  <p className="text-gray-800 whitespace-pre-wrap">{translatedText}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -32,8 +32,6 @@ const TranslatePhotoPage = (props: Props) => {
   const [loading, setLoading] = useState(false);
 
   const [text, setText] = useState("");
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
   const [isSpeakingText, setIsSpeakingText] = useState(false);
   const [transliteratedText, setTransliteratedText] = useState("");
   const [isSpeakingTranslated, setIsSpeakingTranslated] = useState(false);
@@ -136,34 +134,6 @@ const TranslatePhotoPage = (props: Props) => {
     const { translatedText } = await fetchTransliteration(detectedText, selectedLang1, selectedLang2);
     setTranslatedText(translatedText);
     setLoading(false);
-  };
-
-  const toggleListening = () => {
-    if (!("webkitSpeechRecognition" in window)) {
-      alert("Trình duyệt không hỗ trợ nhận diện giọng nói!");
-      return;
-    }
-
-    if (!isListening) {
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = selectedLang1;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => setIsListening(true);
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setText((prevText) => prevText + " " + transcript);
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } else {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-    }
   };
 
   const speakText = (
@@ -368,7 +338,7 @@ const TranslatePhotoPage = (props: Props) => {
                       {detectedText && (
                         <button
                           className="absolute top-2 right-2 bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded-full"
-                          onClick={() => setText("")}
+                          onClick={() => setDetectedText("")}
                         >
                           <IconClose width="22px" height="22px" color="#035acb" />
                         </button>
