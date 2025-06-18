@@ -15,6 +15,7 @@ const style = {
   maxHeight: '90vh',
   width: 'auto',
   height: 'auto',
+  bgcolor: 'transparent',
   // height: '80%',
   // bgcolor: 'background.paper',
   // boxShadow: 24,
@@ -45,8 +46,8 @@ export default function ModalImages({ open, handleClose, children }: ModalImages
             zIndex: 50,
           }}
         >
-          <div className="w-10 h-10 rounded-full bg-black flex justify-center items-center">
-            <IconClose width="24" height="24" color="#fff" />
+          <div className="w-10 h-10 rounded-full bg-[#fff] flex justify-center items-center">
+            <IconClose width="24" height="24" color="#035acb" />
           </div>
         </IconButton>
         <Box sx={{ ...style }}>
