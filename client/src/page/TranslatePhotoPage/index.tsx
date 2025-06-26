@@ -1,22 +1,20 @@
 import { Button } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import Tesseract from 'tesseract.js';
+import Webcam from "react-webcam";
+import Tesseract from "tesseract.js";
+import ModalImages from "../../components/common/CommonModal/ModalImages";
 import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
+import { IconCamera } from "../../components/icon/IconCamera";
 import { IconClose } from "../../components/icon/IconClose";
 import { IconCopy } from "../../components/icon/IconCopy";
-import { IconMic } from "../../components/icon/IconMic";
 import { IconStop } from "../../components/icon/IconStop";
+import { IconUpload } from "../../components/icon/IconUpload";
 import { IconVolume } from "../../components/icon/IconVolume";
 import Header from "../../layout/header";
 import { languages } from "../../utils/languages";
 import { fetchTransliteration } from "../../utils/translate";
 import s from "./style.module.scss";
-import { IconUpload } from "../../components/icon/IconUpload";
-import Webcam from "react-webcam";
-import ModalImages from "../../components/common/CommonModal/ModalImages";
-import { IconCamera } from "../../components/icon/IconCamera";
-
 
 type Props = {};
 
@@ -25,7 +23,7 @@ const TranslatePhotoPage = (props: Props) => {
   const [selectedLang2, setSelectedLang2] = useState("en");
   const [isOpenLang1, setIsOpenLang1] = useState(false);
   const [isOpenLang2, setIsOpenLang2] = useState(false);
-  const [image, setImage] = useState<File | null>(null);
+  const [, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [detectedText, setDetectedText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
@@ -39,13 +37,12 @@ const TranslatePhotoPage = (props: Props) => {
   const [dragOver, setDragOver] = useState(false);
 
   const webcamRef = useRef<Webcam>(null);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [, setCapturedImage] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
-
 
   const handleOCR = (imageSrc: string) => {
     setLoading(true);
-    Tesseract.recognize(imageSrc, 'eng', {
+    Tesseract.recognize(imageSrc, "eng", {
       logger: (m) => console.log(m),
     })
       .then(({ data: { text } }) => {
@@ -90,7 +87,7 @@ const TranslatePhotoPage = (props: Props) => {
         setLoading(true);
 
         // OCR
-        const { data } = await Tesseract.recognize(imageURL, 'eng+vie', {
+        const { data } = await Tesseract.recognize(imageURL, "eng+vie", {
           logger: (m) => console.log(m),
         });
 
@@ -108,7 +105,6 @@ const TranslatePhotoPage = (props: Props) => {
         } else {
           setTranslatedText("Không nhận diện được chữ từ ảnh.");
         }
-
       } catch (error) {
         console.error("Lỗi xử lý ảnh:", error);
         setDetectedText("Không thể nhận diện văn bản.");
@@ -116,12 +112,10 @@ const TranslatePhotoPage = (props: Props) => {
       } finally {
         setLoading(false);
       }
-
     } else {
       toast.error("Vui lòng chọn tệp hình ảnh hợp lệ.");
     }
   };
-
 
   const handleRemoveImage = () => {
     setImagePreview(null);
@@ -131,7 +125,11 @@ const TranslatePhotoPage = (props: Props) => {
   const handleTranslate = async (text: string) => {
     if (!detectedText) return;
     setLoading(true);
-    const { translatedText } = await fetchTransliteration(detectedText, selectedLang1, selectedLang2);
+    const { translatedText } = await fetchTransliteration(
+      detectedText,
+      selectedLang1,
+      selectedLang2
+    );
     setTranslatedText(translatedText);
     setLoading(false);
   };
@@ -178,7 +176,9 @@ const TranslatePhotoPage = (props: Props) => {
 
   return (
     <>
-      <div className={`${s.rainbow_bg} justify-center items-center min-h-screen`}>
+      <div
+        className={`${s.rainbow_bg} justify-center items-center min-h-screen`}
+      >
         <div className="header">
           <Header />
         </div>
@@ -187,24 +187,31 @@ const TranslatePhotoPage = (props: Props) => {
             <h2 className="text-2xl font-bold mb-4 text-center">Dịch Ảnh</h2>
             {/* <NavLink to={EPath.translate_chatTest}>test chat</NavLink> */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Chọn ảnh để dịch</label>
+              <label className="block text-sm font-medium mb-2">
+                Chọn ảnh để dịch
+              </label>
 
               {!imagePreview && (
                 <div
-                  onClick={() => document.getElementById("imageUpload")?.click()}
+                  onClick={() =>
+                    document.getElementById("imageUpload")?.click()
+                  }
                   onDrop={handleImageUpload}
                   onDragOver={(e) => {
                     e.preventDefault();
                     setDragOver(true);
                   }}
                   onDragLeave={() => setDragOver(false)}
-                  className={`cursor-pointer sm:w-[40%] mt-[10px] bg-white border-2 border-dashed rounded-xl p-6 text-center transition mx-auto ${dragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"
-                    }`}
+                  className={`cursor-pointer sm:w-[40%] mt-[10px] bg-white border-2 border-dashed rounded-xl p-6 text-center transition mx-auto ${
+                    dragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"
+                  }`}
                 >
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <IconUpload width="28px" height="28px" color="#035acb" />
                     <p className="text-sm text-gray-600">
-                      {dragOver ? "Thả ảnh vào đây" : "Nhấn hoặc kéo thả ảnh vào đây"}
+                      {dragOver
+                        ? "Thả ảnh vào đây"
+                        : "Nhấn hoặc kéo thả ảnh vào đây"}
                     </p>
                   </div>
 
@@ -243,22 +250,41 @@ const TranslatePhotoPage = (props: Props) => {
                 <span className="text-xl">
                   <IconCamera width="20px" height="20px" />
                 </span>
-                <span className="font-semibold text-xs sm:text-sm">Quét văn bản</span>
+                <span className="font-semibold text-xs sm:text-sm">
+                  Quét văn bản
+                </span>
               </button>
             </div>
             {imagePreview && (
               <div className="flex h-[40px] justify-content-center sm:flex-row sm:items-center">
                 {loading && (
                   <div className="flex items-center gap-2 text-blue-600 font-medium">
-                    <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    <svg
+                      className="animate-spin h-5 w-5 text-blue-600"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      />
                     </svg>
                     Đang xử lý ảnh và dịch...
                   </div>
                 )}
                 {!loading && detectedText && translatedText && (
-                  <p className="text-green-700 font-medium">✅ Dịch ảnh hoàn tất</p>
+                  <p className="text-green-700 font-medium">
+                    ✅ Dịch ảnh hoàn tất
+                  </p>
                 )}
               </div>
             )}
@@ -270,7 +296,9 @@ const TranslatePhotoPage = (props: Props) => {
                     <div className="flex px-3">
                       <div className="flex">
                         <Button>
-                          <p className="text-[#035acb] m-auto">Phát hiện ngôn ngữ</p>
+                          <p className="text-[#035acb] m-auto">
+                            Phát hiện ngôn ngữ
+                          </p>
                         </Button>
                       </div>
                       <div className="border-b-2 border-[#035acb]"></div>
@@ -338,24 +366,43 @@ const TranslatePhotoPage = (props: Props) => {
                       {detectedText && (
                         <button
                           className="absolute top-2 right-2 bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded-full"
-                          onClick={() => setDetectedText("")}
+                          onClick={() => {
+                            setDetectedText("");
+                            setTranslatedText("");
+                            setTransliteratedText("");
+                          }}
                         >
-                          <IconClose width="22px" height="22px" color="#035acb" />
+                          <IconClose
+                            width="22px"
+                            height="22px"
+                            color="#035acb"
+                          />
                         </button>
                       )}
                       <div className="absolute bottom-2 right-4 text-gray-500 text-sm">
-                        {detectedText.split(/\s+/).filter(Boolean).length} từ • {detectedText.length}
+                        {detectedText.split(/\s+/).filter(Boolean).length} từ •{" "}
+                        {detectedText.length}
                         /5.000 ký tự
                       </div>
                       {detectedText && (
                         <button
                           className="absolute bottom-2 left-2 bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded-full"
-                          onClick={() => speakText(detectedText, selectedLang1, "text")}
+                          onClick={() =>
+                            speakText(detectedText, selectedLang1, "text")
+                          }
                         >
                           {isSpeakingText ? (
-                            <IconStop width="22px" height="22px" color="#ffffff" />
+                            <IconStop
+                              width="22px"
+                              height="22px"
+                              color="#ffffff"
+                            />
                           ) : (
-                            <IconVolume width="22px" height="22px" color="#3a79cb" />
+                            <IconVolume
+                              width="22px"
+                              height="22px"
+                              color="#3a79cb"
+                            />
                           )}
                         </button>
                       )}
@@ -442,11 +489,19 @@ const TranslatePhotoPage = (props: Props) => {
                           <button
                             className="absolute bottom-2 left-2 bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded-full"
                             onClick={() =>
-                              speakText(translatedText, selectedLang2, "translated")
+                              speakText(
+                                translatedText,
+                                selectedLang2,
+                                "translated"
+                              )
                             }
                           >
                             {isSpeakingTranslated ? (
-                              <IconStop width="22px" height="22px" color="#ffffff" />
+                              <IconStop
+                                width="22px"
+                                height="22px"
+                                color="#ffffff"
+                              />
                             ) : (
                               <IconVolume
                                 width="22px"
@@ -462,7 +517,6 @@ const TranslatePhotoPage = (props: Props) => {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -485,7 +539,6 @@ const TranslatePhotoPage = (props: Props) => {
             >
               <IconCamera width="30px" height="30px" color="#035acb" />
             </button>
-
           </div>
         </div>
       </ModalImages>
