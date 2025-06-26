@@ -6,7 +6,7 @@ import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist";
 // import "pdfjs-dist/build/pdf.worker.entry"; // Bắt buộc nếu dùng Webpack
-import { fetchGoogleTranslate } from "../../utils/translate"; // Giả sử bạn đã có
+import { fetchAPITranslate } from "../../utils/translate"; // Giả sử bạn đã có
 
 const languages = [
   { code: "vi", name: "Tiếng Việt" },
@@ -58,7 +58,7 @@ const TranslateDocumentPage = () => {
     }
 
     try {
-      const translated = await fetchGoogleTranslate(fileText, sourceLang, targetLang);
+      const translated = await fetchAPITranslate(fileText, sourceLang, targetLang);
       setTranslatedText(translated);
     } catch (error) {
       alert("Lỗi khi dịch tài liệu.");

@@ -27,7 +27,7 @@ const Header = (props: Props) => {
             </svg> */}
             <NavLink className="navbar_brand no-underline" to={EPath.root}>
               <p className="text-[#035acb] m-auto font-bold font-stretch-expanded">
-                DỊCH AI
+                TRANSLATION
               </p>
             </NavLink>
           </div>
