@@ -182,7 +182,7 @@ const TranslatePhotoPage = (props: Props) => {
         <div className="header">
           <Header />
         </div>
-        <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-full sm:h-screen">
+        <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)]">
           <div className="sm:max-w-[85%] mx-auto p-4 sm:p-8">
             <h2 className="text-2xl font-bold mb-4 text-center">Dịch Ảnh</h2>
             {/* <NavLink to={EPath.translate_chatTest}>test chat</NavLink> */}
@@ -288,8 +288,8 @@ const TranslatePhotoPage = (props: Props) => {
                 )}
               </div>
             )}
-            <div className="max-h-screen sm:h-screen">
-              <div className="w-full flex justify-content-center max-h-full overflow-y-auto sm:h-screen">
+            <div className="max-h-screen">
+              <div className="w-full flex justify-content-center overflow-y-auto">
                 <div className="sm:flex sm:gap-5 w-[100%] h-full sm:h-[350px]">
                   <div className="w-full h-full">
                     <div className="flex px-3">
@@ -347,8 +347,8 @@ const TranslatePhotoPage = (props: Props) => {
                       </div>
                     </div>
 
-                    <div className="relative w-full h-full">
-                      <div className="w-full h-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
+                    <div className="relative w-full">
+                      <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                         <textarea
                           className="w-full h-full min-h-[200px] resize-none outline-none"
                           placeholder="Nhập"
@@ -460,8 +460,8 @@ const TranslatePhotoPage = (props: Props) => {
                         )}
                       </div>
                     </div>
-                    <div className="relative w-full h-full">
-                      <div className="w-full h-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
+                    <div className="relative w-full">
+                      <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                         <textarea
                           className="w-full h-full min-h-[200px] resize-none outline-none"
                           placeholder="Bản dịch..."
