@@ -182,7 +182,7 @@ const TranslatePhotoPage = (props: Props) => {
         <div className="header">
           <Header />
         </div>
-        <div className="overflow-y-auto max-h-screen sm:h-screen">
+        <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-full sm:h-screen">
           <div className="sm:max-w-[85%] mx-auto p-4 sm:p-8">
             <h2 className="text-2xl font-bold mb-4 text-center">Dịch Ảnh</h2>
             {/* <NavLink to={EPath.translate_chatTest}>test chat</NavLink> */}
@@ -288,7 +288,6 @@ const TranslatePhotoPage = (props: Props) => {
                 )}
               </div>
             )}
-
             <div className="max-h-screen sm:h-screen">
               <div className="w-full flex justify-content-center max-h-full overflow-y-auto sm:h-screen">
                 <div className="sm:flex sm:gap-5 w-[100%] h-full sm:h-[350px]">

@@ -80,7 +80,7 @@ const Header = (props: Props) => {
                         isActive ? "text-[#035acb]" : "text-gray-500"
                       } m-auto text-xs sm:text-base`}
                     >
-                      Trò chuyện
+                      Hội thoại
                     </p>
                   )}
                 </NavLink>

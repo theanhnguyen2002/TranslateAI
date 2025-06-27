@@ -134,10 +134,11 @@ const TranslatePage = (props: Props) => {
       <div className="header">
         <Header />
       </div>
-      <div className="overflow-y-auto max-h-screen sm:h-screen">
-        <div className="w-full flex justify-content-center pb-[24px] max-h-full overflow-y-auto sm:h-screen">
-          <div className="sm:flex sm:gap-5 w-[85%] h-full sm:h-[350px] mt-[24px] sm:mt-[52px]">
-            <div className="w-full h-full">
+      <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:h-screen">
+        <h2 className="text-2xl font-bold mb-4 text-center mt-[24px] sm:mt-[24px]">Dịch văn bản</h2>
+        <div className="w-full h-auto flex justify-content-center pb-[28px] max-h-full h-screen sm:h-0">
+          <div className="sm:flex sm:gap-5 w-[85%]">
+            <div className="w-full">
               <div className="flex px-3">
                 <div className="flex">
                   <Button>
@@ -190,8 +191,8 @@ const TranslatePage = (props: Props) => {
                   )}
                 </div>
               </div>
-              <div className="relative w-full h-full">
-                <div className="w-full h-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
+              <div className="relative w-full h-auto">
+                <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
                     className="w-full h-full min-h-[200px] resize-none outline-none"
                     placeholder="Nhập"
@@ -245,12 +246,12 @@ const TranslatePage = (props: Props) => {
               </div>
             </div>
             <div
-              className="flex sm:items-center justify-content-center py-2.5"
+              className="flex sm:items-center justify-content-center py-3"
               onClick={swapLanguages}
             >
               <IconArrowLeftRight width="24px" height="24px" />
             </div>
-            <div className="w-full h-full">
+            <div className="w-full">
               <div className="flex gap-2 px-3">
                 <div className="relative inline-block">
                   <button
@@ -297,8 +298,8 @@ const TranslatePage = (props: Props) => {
                   )}
                 </div>
               </div>
-              <div className="relative w-full h-full">
-                <div className="w-full h-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
+              <div className="relative w-full h-auto">
+                <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
                     className="w-full h-full min-h-[200px] resize-none outline-none"
                     placeholder="Bản dịch..."
