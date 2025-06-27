@@ -58,6 +58,12 @@ const TranslateChatPage = (props: Props) => {
   const [isOpenLang2, setIsOpenLang2] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [recordTimeout, setRecordTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [isPaused1, setIsPaused1] = useState(false);
+  const [isPaused2, setIsPaused2] = useState(false);
+  const [recordTimeout2, setRecordTimeout2] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+
 
   useEffect(() => {
     // Load voices
@@ -126,56 +132,62 @@ const TranslateChatPage = (props: Props) => {
       return;
     }
 
-    if (mic === 1 && !isListening1) {
-      setText("");
-      setTranslatedText("");
-      setTransliteratedText("");
+    const recognitionRef = mic === 1 ? recognitionRef1 : recognitionRef2;
+    const isListening = mic === 1 ? isListening1 : isListening2;
+    const setIsListening = mic === 1 ? setIsListening1 : setIsListening2;
+    const lang = mic === 1 ? selectedLang1 : selectedLang2;
 
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = selectedLang1 === "vi" ? "vi-VN" : "en-US"; // dùng đúng ngôn ngữ đang chọn
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => setIsListening1(true);
-      recognition.onerror = () => setIsListening1(false);
-      recognition.onend = () => setIsListening1(false);
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setText((prevText) => prevText + " " + transcript);
-      };
-
-      recognitionRef1.current = recognition;
-      recognition.start();
-    } else if (mic === 2 && !isListening2) {
-      setText("");
-      setTranslatedText("");
-      setTransliteratedText("");
-
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = selectedLang2 === "vi" ? "vi-VN" : "en-US"; // dùng đúng ngôn ngữ đang chọn
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => setIsListening2(true);
-      recognition.onerror = () => setIsListening2(false);
-      recognition.onend = () => setIsListening2(false);
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setText((prevText) => prevText + " " + transcript);
-      };
-
-      recognitionRef2.current = recognition;
-      recognition.start();
-    } else {
-      if (mic === 1) {
-        recognitionRef1.current?.stop();
-        setIsListening1(false);
-      } else if (mic === 2) {
-        recognitionRef2.current?.stop();
-        setIsListening2(false);
-      }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      if (mic === 1 && recordTimeout) clearTimeout(recordTimeout);
+      if (mic === 2 && recordTimeout2) clearTimeout(recordTimeout2);
+      return;
     }
+
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = lang === "vi" ? "vi-VN" : lang;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = true;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[event.results.length - 1][0].transcript;
+
+      if (mic === 1) {
+        setText((prev) => prev + (prev ? " " : "") + transcript);
+      } else {
+        setTranslatedText((prev) => prev + (prev ? " " : "") + transcript);
+        fetchTranslation(transcript, selectedLang2, selectedLang1)
+          .then((result) => {
+            setText((prev) => prev + (prev ? " " : "") + result);
+          })
+          .catch(() => {
+            toast.error("Lỗi dịch ngược khi thu mic 2");
+          });
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+
+    // Tự động dừng sau 3 phút
+    const timeout = setTimeout(() => {
+      recognition.stop();
+      setIsListening(false);
+      toast.info("Đã tự dừng ghi âm sau 3 phút");
+    }, 180000);
+
+    if (mic === 1) setRecordTimeout(timeout);
+    if (mic === 2) setRecordTimeout2(timeout);
   };
+
+
+
 
   useEffect(() => {
     if (!text.trim()) {
@@ -283,28 +295,22 @@ const TranslateChatPage = (props: Props) => {
                   }}
                   maxLength={5000}
                 />
-                <div className="">
-                  <div className="relative">
-                    <button
-                      className={` left-4 bottom-2 p-3 rounded-full shadow-lg z-50 transition-all duration-200 ${isListening1
-                        ? 'bg-[#2a86ff] hover:bg-[#1a76ef]'
-                        : !("webkitSpeechRecognition" in window)
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-gray-200 hover:bg-gray-300 cursor-pointer'
-                        }`}
-                      onClick={() => toggleListening(1)}
-                      disabled={!("webkitSpeechRecognition" in window)}
-                      title={!("webkitSpeechRecognition" in window) ? "Trình duyệt không hỗ trợ nhận diện giọng nói" : "Nhấn để nói tiếng Việt"}
-                    >
-                      {isListening1 ? (
-                        <IconStop width="24px" height="24px" color="#fff" />
-                      ) : (
-                        <IconMic width="22px" height="22px" color="#3a79cb" />
-                      )}
-                    </button>
-                    {!("webkitSpeechRecognition" in window) && <DisabledOverlay />}
-                    <WaveAnimation isActive={isListening1} />
-                  </div>
+                <div className="relative">
+                  <button
+                    className={` left-4 bottom-2 p-3 rounded-full shadow-lg z-50 transition-all duration-200 ${isListening1
+                      ? 'bg-[#2a86ff] hover:bg-[#1a76ef]'
+                      : !("webkitSpeechRecognition" in window)
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-gray-200 hover:bg-gray-300 cursor-pointer'
+                      }`}
+                    onClick={() => toggleListening(1)}
+                  >
+                    {isListening1 ? (
+                      <IconStop width="24px" height="24px" color="#fff" />
+                    ) : (
+                      <IconMic width="22px" height="22px" color="#3a79cb" />
+                    )}
+                  </button>
                 </div>
               </div>
               {text && (
@@ -320,7 +326,7 @@ const TranslateChatPage = (props: Props) => {
               </div>
               {text && (
                 <button
-                  className="absolute bottom-2 left-11 bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded-full"
+                  className="absolute bottom-2 left-[9px] bg-gray-200 hover:bg-gray-300 text-gray-600 p-1 rounded-full"
                   onClick={() => speakText(text, selectedLang1, "text")}
                 >
                   {isSpeakingText ? <IconStop width="22px" height="22px" color="#ffffff" /> : <IconVolume width="22px" height="22px" color="#3a79cb" />}
@@ -398,8 +404,6 @@ const TranslateChatPage = (props: Props) => {
                         : 'bg-gray-200 hover:bg-gray-300 cursor-pointer'
                       }`}
                     onClick={() => toggleListening(2)}
-                    disabled={!("webkitSpeechRecognition" in window)}
-                    title={!("webkitSpeechRecognition" in window) ? "Trình duyệt không hỗ trợ nhận diện giọng nói" : "Nhấn để nói tiếng Anh"}
                   >
                     {isListening2 ? (
                       <IconStop width="18px" height="18px" color="#fff" />
@@ -407,8 +411,6 @@ const TranslateChatPage = (props: Props) => {
                       <IconMic width="22px" height="22px" color="#3a79cb" />
                     )}
                   </button>
-                  {!("webkitSpeechRecognition" in window) && <DisabledOverlay />}
-                  <WaveAnimation isActive={isListening2} />
                 </div>
               </div>
               {translatedText && (
