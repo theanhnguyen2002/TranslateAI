@@ -18,7 +18,7 @@ type Props = {};
 const TranslateChatPage = (props: Props) => {
   const [selectedLang1, setSelectedLang1] = useState("vi");
   const [selectedLang2, setSelectedLang2] = useState("en");
-  const [transliteratedText, setTransliteratedText] = useState("");
+  const [, setTransliteratedText] = useState("");
   const [text, setText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,11 +33,9 @@ const TranslateChatPage = (props: Props) => {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [recordTimeout, setRecordTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
-  const [isPaused1, setIsPaused1] = useState(false);
-  const [isPaused2, setIsPaused2] = useState(false);
   const [recordTimeout2, setRecordTimeout2] = useState<ReturnType<typeof setTimeout> | null>(null);
-
-
+  const selectedLang1Name = languages.find((lang) => lang.code === selectedLang1)?.name || "Ngôn ngữ";
+  const selectedLang2Name = languages.find((lang) => lang.code === selectedLang2)?.name || "Ngôn ngữ";
 
   useEffect(() => {
     // Load voices
@@ -147,6 +145,11 @@ const TranslateChatPage = (props: Props) => {
     };
 
     recognitionRef.current = recognition;
+    if (mic === 1) {
+      setText(""); // Clear đoạn bên trái
+    } else if (mic === 2) {
+      setTranslatedText(""); // Clear đoạn bên phải
+    }
     recognition.start();
 
     // Tự động dừng sau 3 phút
@@ -215,7 +218,7 @@ const TranslateChatPage = (props: Props) => {
         <Header />
       </div>
       <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:h-screen">
-        <h2 className="text-2xl font-bold mb-4 text-center mt-[24px] sm:mt-[24px]">Hội Thoại</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center mt-[24px] sm:mt-[24px]">Hội thoại</h2>
         <div className="w-full h-auto flex justify-content-center pb-[48px] max-h-full h-screen sm:h-0">
           <div className="sm:flex sm:gap-5 w-[85%]">
             <div className="w-full pb-4">
@@ -262,7 +265,7 @@ const TranslateChatPage = (props: Props) => {
                 <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
                     className="w-full h-full min-h-[200px] resize-none outline-none"
-                    placeholder="Nhập"
+                    placeholder={`Bản dịch ${selectedLang1Name}...`}
                     value={text}
                     onChange={(e) => {
                       if (e.target.value.length <= 5000) {
@@ -270,6 +273,7 @@ const TranslateChatPage = (props: Props) => {
                       }
                     }}
                     maxLength={5000}
+                    readOnly
                   />
                   <div className="relative">
                     <div className="absolute top-[11px] left-1/2 -translate-x-1/2">
@@ -370,7 +374,7 @@ const TranslateChatPage = (props: Props) => {
                 <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
                     className="w-full h-full min-h-[200px] resize-none outline-none"
-                    placeholder="Bản dịch..."
+                    placeholder={`Bản dịch ${selectedLang2Name}...`}
                     value={loading ? "Đang dịch..." : translatedText}
                     readOnly
                   />

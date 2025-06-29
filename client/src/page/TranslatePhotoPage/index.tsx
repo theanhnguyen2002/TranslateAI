@@ -21,6 +21,8 @@ type Props = {};
 const TranslatePhotoPage = (props: Props) => {
   const [selectedLang1, setSelectedLang1] = useState("vi");
   const [selectedLang2, setSelectedLang2] = useState("en");
+  const selectedLang1Name = languages.find((lang) => lang.code === selectedLang1)?.name || "Ngôn ngữ";
+  const selectedLang2Name = languages.find((lang) => lang.code === selectedLang2)?.name || "Ngôn ngữ";
   const [isOpenLang1, setIsOpenLang1] = useState(false);
   const [isOpenLang2, setIsOpenLang2] = useState(false);
   const [, setImage] = useState<File | null>(null);
@@ -182,9 +184,9 @@ const TranslatePhotoPage = (props: Props) => {
         <div className="header">
           <Header />
         </div>
-        <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)]">
+        <div className="overflow-y-auto h-screen max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)]">
           <div className="sm:max-w-[85%] mx-auto p-4 sm:p-8">
-            <h2 className="text-2xl font-bold mb-4 text-center">Dịch Ảnh</h2>
+            <h2 className="text-2xl font-bold mb-4 text-center">Dịch ảnh</h2>
             {/* <NavLink to={EPath.translate_chatTest}>test chat</NavLink> */}
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2">
@@ -202,9 +204,8 @@ const TranslatePhotoPage = (props: Props) => {
                     setDragOver(true);
                   }}
                   onDragLeave={() => setDragOver(false)}
-                  className={`cursor-pointer sm:w-[40%] mt-[10px] bg-white border-2 border-dashed rounded-xl p-6 text-center transition mx-auto ${
-                    dragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"
-                  }`}
+                  className={`cursor-pointer sm:w-[40%] mt-[10px] bg-white border-2 border-dashed rounded-xl p-6 text-center shadow-lg transition mx-auto ${dragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"
+                    }`}
                 >
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <IconUpload width="28px" height="28px" color="#035acb" />
@@ -289,7 +290,7 @@ const TranslatePhotoPage = (props: Props) => {
               </div>
             )}
             <div className="max-h-screen">
-              <div className="w-full flex justify-content-center overflow-y-auto">
+              <div className="w-full flex justify-content-center">
                 <div className="sm:flex sm:gap-5 w-[100%] h-full sm:h-[350px]">
                   <div className="w-full h-full">
                     <div className="flex px-3">
@@ -351,7 +352,7 @@ const TranslatePhotoPage = (props: Props) => {
                       <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                         <textarea
                           className="w-full h-full min-h-[200px] resize-none outline-none"
-                          placeholder="Nhập"
+                          placeholder={`Bản dịch ${selectedLang1Name}...`}
                           value={detectedText}
                           onChange={(e) => {
                             if (e.target.value.length <= 5000) {
@@ -464,7 +465,7 @@ const TranslatePhotoPage = (props: Props) => {
                       <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                         <textarea
                           className="w-full h-full min-h-[200px] resize-none outline-none"
-                          placeholder="Bản dịch..."
+                          placeholder={`Bản dịch ${selectedLang2Name}...`}
                           value={loading ? "Đang dịch..." : translatedText}
                           readOnly
                         />
