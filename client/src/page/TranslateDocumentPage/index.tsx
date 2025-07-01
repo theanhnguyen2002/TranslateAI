@@ -85,6 +85,7 @@ const TranslateDocumentPage = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `translated_${fileName || 'document'}.txt`;
     link.click();
+      toast.success("File đã được tải");
   };
 
   return (
@@ -92,7 +93,7 @@ const TranslateDocumentPage = () => {
       <div className="header">
         <Header />
       </div>
-      <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:h-screen">
+      <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)] h-screen">
         <h2 className="text-2xl font-bold mb-4 text-center mt-[24px] sm:mt-[24px]">Dịch tài liệu</h2>
         <div className="w-full h-auto flex justify-content-center pb-[28px] max-h-full h-screen sm:h-0">
           <div className="w-full sm:max-w-[85%] mx-auto p-4 sm:p-8">
@@ -226,7 +227,7 @@ const TranslateDocumentPage = () => {
                   disabled
                   className="px-6 py-3 bg-gray-400 text-white font-medium rounded-lg cursor-not-allowed"
                 >
-                  Đang dịch...
+                  Chưa Được Dịch
                 </button>
               )}
             </div>
