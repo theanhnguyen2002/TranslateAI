@@ -306,11 +306,12 @@ const TranslatePage = (props: Props) => {
                     value={loading ? "Đang dịch..." : translatedText}
                     readOnly
                   />
-                  {transliteratedText && (
+                  {/* Phần phiên âm */}
+                  {/* {transliteratedText && (
                     <p className="text-gray-500 text-sm mt-1">
                       {transliteratedText}
                     </p>
-                  )}
+                  )} */}
                 </div>
                 {translatedText && (
                   <>
