@@ -3,7 +3,9 @@ type TranslationResult = {
   transliteration: string;
 };
 
-// Gọi API dịch Google không chính thức
+const GOOGLE_API_KEY = "AIzaSyCZjHJDsuQrBM0C4huWRx5Cdi6XVTRpwrs";
+
+// Gọi API chính thức của Google Translate
 export const fetchAPITranslate = async (
   text: string,
   sourceLang: string,
@@ -12,24 +14,31 @@ export const fetchAPITranslate = async (
 ) => {
   if (!text.trim() || !sourceLang || !targetLang) return null;
 
-  const baseUrl = "https://translate.googleapis.com/translate_a/single";
-  const query = new URLSearchParams({
-    client: "gtx",
-    sl: sourceLang,
-    tl: targetLang,
-    q: text,
-  });
+  const url = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`;
 
-  dtParams.forEach((dt) => query.append("dt", dt));
+  const body = {
+    q: text,
+    source: sourceLang,
+    target: targetLang,
+    format: "text",
+    model: "nmt",
+  };
 
   try {
-    const response = await fetch(`${baseUrl}?${query.toString()}`);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error("Lỗi dịch thuật:", error);
     return null;
@@ -43,11 +52,8 @@ export const fetchTranslation = async (
   tl: string
 ): Promise<string> => {
   const data = await fetchAPITranslate(text, sl, tl, ["t"]);
-  if (Array.isArray(data) && Array.isArray(data[0])) {
-    const translatedText = data[0].map((item: any) => item?.[0] || "").join("");
-    return translatedText || "Không thể dịch";
-  }
-  return "Không thể dịch";
+  const translation = data?.data?.translations?.[0]?.translatedText;
+  return translation || "Không thể dịch";
 };
 
 // Trả về cả văn bản đã dịch và phiên âm
@@ -56,17 +62,11 @@ export const fetchTransliteration = async (
   sl: string,
   tl: string
 ): Promise<TranslationResult> => {
-  const data = await fetchAPITranslate(text, sl, tl, ["t", "rm"]);
-  if (Array.isArray(data) && Array.isArray(data[0])) {
-    const translatedText = data[0].map((item: any) => item?.[0] || "").join("");
-    const transliteration = data[0].map((item: any) => item?.[3] || "").join(" ").trim();
-    return {
-      translatedText: translatedText || "Không thể dịch.",
-      transliteration: transliteration || "Không có phiên âm có sẵn",
-    };
-  }
+  const data = await fetchAPITranslate(text, sl, tl, ["t"]);
+  const translation = data?.data?.translations?.[0];
+
   return {
-    translatedText: "Không thể dịch.",
-    transliteration: "Không có phiên âm có sẵn",
+    translatedText: translation?.translatedText || "Không thể dịch.",
+    transliteration: translation?.transliteration || "Không có phiên âm có sẵn",
   };
 };
