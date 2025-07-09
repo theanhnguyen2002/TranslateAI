@@ -70,3 +70,22 @@ export const fetchTransliteration = async (
     transliteration: translation?.transliteration || "Không có phiên âm có sẵn",
   };
 };
+
+// Thu âm
+export const sendAudioToServer = async (audioBlob: Blob): Promise<string | null> => {
+  try {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "voice.webm");
+
+    const response = await fetch("http://localhost:3001/api/speech-to-text", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    return data.transcript || null;
+  } catch (error) {
+    console.error("Lỗi khi gửi audio:", error);
+    return null;
+  }
+};
