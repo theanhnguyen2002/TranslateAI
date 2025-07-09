@@ -1,83 +1,99 @@
-type TranslationResult = {
+// translation.ts
+
+export type TranslationResult = {
   translatedText: string;
   transliteration: string;
 };
 
-const GOOGLE_API_KEY = "AIzaSyCZjHJDsuQrBM0C4huWRx5Cdi6XVTRpwrs";
+const BACKEND_URL = "http://localhost:3001/api";
 
-// Gọi API chính thức của Google Translate
-export const fetchAPITranslate = async (
-  text: string,
-  sourceLang: string,
-  targetLang: string,
-  dtParams: string[] = ["t"]
-) => {
-  if (!text.trim() || !sourceLang || !targetLang) return null;
-
-  const url = `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`;
-
-  const body = {
-    q: text,
-    source: sourceLang,
-    target: targetLang,
-    format: "text",
-    model: "nmt",
-  };
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Lỗi dịch thuật:", error);
-    return null;
-  }
-};
-
-// Trả về chỉ phần văn bản đã dịch
+/**
+ * Gọi backend để dịch văn bản và chỉ trả về phần đã dịch.
+ */
 export const fetchTranslation = async (
   text: string,
   sl: string,
   tl: string
 ): Promise<string> => {
-  const data = await fetchAPITranslate(text, sl, tl, ["t"]);
-  const translation = data?.data?.translations?.[0]?.translatedText;
-  return translation || "Không thể dịch";
+  try {
+    const response = await fetch(`${BACKEND_URL}/translate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, sourceLang: sl, targetLang: tl }),
+    });
+
+    const data = await response.json();
+    const translation = data?.data?.translations?.[0]?.translatedText;
+    return translation || "Không thể dịch";
+  } catch (error) {
+    console.error("❌ Lỗi khi dịch văn bản:", error);
+    return "Không thể dịch";
+  }
 };
 
-// Trả về cả văn bản đã dịch và phiên âm
+/**
+ * Gọi backend để dịch văn bản và lấy cả bản dịch + phiên âm.
+ */
 export const fetchTransliteration = async (
   text: string,
   sl: string,
   tl: string
 ): Promise<TranslationResult> => {
-  const data = await fetchAPITranslate(text, sl, tl, ["t"]);
-  const translation = data?.data?.translations?.[0];
+  try {
+    const response = await fetch(`${BACKEND_URL}/translate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, sourceLang: sl, targetLang: tl }),
+    });
 
-  return {
-    translatedText: translation?.translatedText || "Không thể dịch.",
-    transliteration: translation?.transliteration || "Không có phiên âm có sẵn",
-  };
+    const data = await response.json();
+    const translation = data?.data?.translations?.[0];
+
+    return {
+      translatedText: translation?.translatedText || "Không thể dịch.",
+      transliteration: translation?.transliteration || "Không có phiên âm.",
+    };
+  } catch (error) {
+    console.error("❌ Lỗi khi lấy phiên âm:", error);
+    return {
+      translatedText: "Lỗi khi dịch",
+      transliteration: "",
+    };
+  }
 };
 
-// Thu âm
-export const sendAudioToServer = async (audioBlob: Blob): Promise<string | null> => {
+/**
+ * Gọi backend để nhận diện văn bản từ ảnh (OCR).
+ */
+export const detectTextFromImage = async (
+  base64Image: string
+): Promise<string> => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/detect-text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ base64Image }),
+    });
+
+    const result = await response.json();
+    return result.text || "Không thể nhận diện chữ.";
+  } catch (error) {
+    console.error("❌ Lỗi OCR:", error);
+    return "Không thể xử lý ảnh.";
+  }
+};
+
+/**
+ * Gửi file audio lên backend để chuyển thành văn bản.
+ */
+export const sendAudioToServer = async (
+  audioBlob: Blob
+): Promise<string | null> => {
   try {
     const formData = new FormData();
     formData.append("audio", audioBlob, "voice.webm");
 
-    const response = await fetch("http://localhost:3001/api/speech-to-text", {
+    const response = await fetch(`${BACKEND_URL}/speech-to-text`, {
       method: "POST",
       body: formData,
     });
@@ -85,7 +101,7 @@ export const sendAudioToServer = async (audioBlob: Blob): Promise<string | null>
     const data = await response.json();
     return data.transcript || null;
   } catch (error) {
-    console.error("Lỗi khi gửi audio:", error);
+    console.error("❌ Lỗi gửi âm thanh:", error);
     return null;
   }
 };

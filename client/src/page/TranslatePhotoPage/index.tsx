@@ -13,7 +13,7 @@ import { IconUpload } from "../../components/icon/IconUpload";
 import { IconVolume } from "../../components/icon/IconVolume";
 import Header from "../../layout/header";
 import { languages } from "../../utils/languages";
-import { fetchTransliteration } from "../../utils/translate";
+import { fetchTransliteration, detectTextFromImage } from "../../utils/translate";
 import s from "./style.module.scss";
 
 type Props = {};
@@ -70,7 +70,6 @@ const TranslatePhotoPage = (props: Props) => {
     e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>
   ) => {
     e.preventDefault();
-
     let file: File | null = null;
 
     if ("dataTransfer" in e) {
@@ -84,40 +83,48 @@ const TranslatePhotoPage = (props: Props) => {
       const imageURL = URL.createObjectURL(file);
       setImagePreview(imageURL);
 
-      // 🧠 Bắt đầu tự động OCR và dịch sau khi ảnh được chọn
-      try {
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        const base64 = (reader.result as string).split(",")[1];
         setLoading(true);
 
-        // OCR
-        const { data } = await Tesseract.recognize(imageURL, "eng+vie", {
-          logger: (m) => console.log(m),
-        });
+        try {
+          const textFromImage = await detectTextFromImage(base64);
+          setDetectedText(textFromImage);
 
-        const ocrText = data.text.trim();
-        setDetectedText(ocrText);
+          if (!textFromImage || textFromImage === "Không nhận diện được chữ.") {
+            setTranslatedText("Không nhận diện được chữ từ ảnh.");
+            toast.error("Không nhận diện được chữ từ ảnh.");
+            return;
+          }
 
-        if (ocrText) {
-          // Dịch
           const { translatedText } = await fetchTransliteration(
-            ocrText,
+            textFromImage,
             selectedLang1,
             selectedLang2
           );
+
           setTranslatedText(translatedText);
-        } else {
-          setTranslatedText("Không nhận diện được chữ từ ảnh.");
+          toast.success("Dịch ảnh thành công!");
+        } catch (error) {
+          console.error(error);
+          setDetectedText("Không thể nhận diện văn bản.");
+          setTranslatedText("Không thể dịch.");
+          toast.error("Có lỗi xảy ra khi xử lý ảnh.");
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Lỗi xử lý ảnh:", error);
-        setDetectedText("Không thể nhận diện văn bản.");
-        setTranslatedText("Không thể dịch.");
-      } finally {
-        setLoading(false);
-      }
+      };
+
+      reader.readAsDataURL(file);
     } else {
       toast.error("Vui lòng chọn tệp hình ảnh hợp lệ.");
     }
   };
+
+
+
 
   const handleRemoveImage = () => {
     setImagePreview(null);
@@ -185,8 +192,8 @@ const TranslatePhotoPage = (props: Props) => {
           <Header />
         </div>
         <div className="overflow-y-auto h-screen max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)]">
+          <h2 className="text-2xl font-bold mt-4 text-center">Dịch ảnh</h2>
           <div className="sm:max-w-[85%] mx-auto p-4 sm:p-8">
-            <h2 className="text-2xl font-bold mb-4 text-center">Dịch ảnh</h2>
             {/* <NavLink to={EPath.translate_chatTest}>test chat</NavLink> */}
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2">
@@ -282,11 +289,7 @@ const TranslatePhotoPage = (props: Props) => {
                     Đang xử lý ảnh và dịch...
                   </div>
                 )}
-                {!loading && detectedText && translatedText && (
-                  <p className="text-green-700 font-medium">
-                    ✅ Dịch ảnh hoàn tất
-                  </p>
-                )}
+
               </div>
             )}
             <div className="max-h-screen">
