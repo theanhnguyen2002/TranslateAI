@@ -218,11 +218,10 @@ const TranslatePage = (props: Props) => {
                   /5.000 ký tự
                 </div>
                 <button
-                  className={`absolute bottom-2 left-2 p-1 rounded-full ${
-                    isListening
+                  className={`absolute bottom-2 left-2 p-1 rounded-full ${isListening
                       ? "bg-[#2a86ff] hover:bg-[#026efa]"
                       : "bg-gray-200 hover:bg-gray-300"
-                  }`}
+                    }`}
                   onClick={toggleListening}
                 >
                   {isListening ? (
@@ -249,7 +248,9 @@ const TranslatePage = (props: Props) => {
               className="flex sm:items-center justify-content-center py-3"
               onClick={swapLanguages}
             >
-              <IconArrowLeftRight width="24px" height="24px" />
+              <div className="cursor-pointer">
+                <IconArrowLeftRight width="24px" height="24px" />
+              </div>
             </div>
             <div className="w-full">
               <div className="flex gap-2 px-3">

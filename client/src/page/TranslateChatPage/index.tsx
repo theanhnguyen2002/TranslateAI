@@ -106,9 +106,9 @@ const TranslateChatPage = (props: Props) => {
       setIsListening(false);
     }
     if (streamRef.current) {
-    streamRef.current.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-  }
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
   };
 
   const toggleListening = (mic: 1 | 2) => {
@@ -130,7 +130,7 @@ const TranslateChatPage = (props: Props) => {
     let chunks: BlobPart[] = [];
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      streamRef.current = stream; 
+      streamRef.current = stream;
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       setIsListening(true);
@@ -273,7 +273,7 @@ const TranslateChatPage = (props: Props) => {
               <div className="relative w-full h-auto">
                 <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
-                    className="w-full h-full min-h-[200px] resize-none outline-none"
+                    className="w-full h-full min-h-[200px] resize-none outline-none cursor-default"
                     placeholder={`Bản dịch ${selectedLang1Name}...`}
                     value={text}
                     onChange={(e) => {
@@ -331,7 +331,9 @@ const TranslateChatPage = (props: Props) => {
               className="flex sm:items-center justify-content-center py-3"
               onClick={swapLanguages}
             >
-              <IconArrowLeftRight width="24px" height="24px" />
+              <div className="cursor-pointer">
+                <IconArrowLeftRight width="24px" height="24px" />
+              </div>
             </div>
             <div className="w-full">
               <div className="flex gap-2 px-3">
@@ -382,7 +384,7 @@ const TranslateChatPage = (props: Props) => {
                 </div> */}
                 <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
-                    className="w-full h-full min-h-[200px] resize-none outline-none"
+                    className="w-full h-full min-h-[200px] resize-none outline-none cursor-default"
                     placeholder={`Bản dịch ${selectedLang2Name}...`}
                     value={loading ? "Đang dịch..." : translatedText}
                     readOnly

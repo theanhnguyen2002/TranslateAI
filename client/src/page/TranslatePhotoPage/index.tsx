@@ -415,7 +415,9 @@ const TranslatePhotoPage = (props: Props) => {
                     className="flex sm:items-center justify-content-center py-2.5"
                     onClick={swapLanguages}
                   >
-                    <IconArrowLeftRight width="24px" height="24px" />
+                    <div className="cursor-pointer">
+                      <IconArrowLeftRight width="24px" height="24px" />
+                    </div>
                   </div>
                   <div className="w-full h-full">
                     <div className="flex gap-2 px-3">
