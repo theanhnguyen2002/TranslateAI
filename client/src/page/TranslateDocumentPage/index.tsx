@@ -6,7 +6,7 @@ import Header from "../../layout/header";
 import s from "./style.module.scss";
 import { IconUpload } from "../../components/icon/IconUpload";
 import { languages } from "../../utils/languages";
-import { fetchAPITranslate } from "../../utils/translate";
+import { fetchTranslation } from "../../utils/translate";
 import { toast } from "react-toastify";
 
 // Gán worker
@@ -44,25 +44,30 @@ const TranslateDocumentPage = () => {
 
     const fileExt = file.name.split(".").pop()?.toLowerCase();
 
-    if (fileExt === "txt") {
-      const text = await file.text();
-      setFileText(text);
-    } else if (fileExt === "docx") {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      setFileText(result.value);
-    } else if (fileExt === "pdf") {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let text = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map((item: any) => item.str).join(" ") + "\n";
+    try {
+      if (fileExt === "txt") {
+        const text = await file.text();
+        setFileText(text);
+      } else if (fileExt === "docx") {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        setFileText(result.value);
+      } else if (fileExt === "pdf") {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let text = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map((item: any) => item.str).join("\n") + "\n\n";
+        }
+        setFileText(text);
+      } else {
+        toast.error("Định dạng không hỗ trợ. Vui lòng tải PDF, DOCX hoặc TXT.");
       }
-      setFileText(text);
-    } else {
-      toast.error("Định dạng không hỗ trợ. Vui lòng tải PDF, DOCX hoặc TXT.");
+    } catch (error) {
+      console.error("Lỗi khi xử lý tài liệu:", error);
+      toast.error("Không thể đọc nội dung tệp.");
     }
   };
 
@@ -70,9 +75,11 @@ const TranslateDocumentPage = () => {
     if (!fileText) return;
 
     try {
-      const translated = await fetchAPITranslate(fileText, selectedLang1, selectedLang2);
+      const translated = await fetchTranslation(fileText, selectedLang1, selectedLang2);
       setTranslatedText(translated);
+      toast.success("Dịch thành công!");
     } catch (error) {
+      console.error("Lỗi dịch tài liệu:", error);
       toast.error("Lỗi khi dịch tài liệu.");
     }
   };
@@ -85,7 +92,7 @@ const TranslateDocumentPage = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `translated_${fileName || 'document'}.txt`;
     link.click();
-      toast.success("File đã được tải");
+    toast.success("File đã được tải");
   };
 
   return (
@@ -94,7 +101,7 @@ const TranslateDocumentPage = () => {
         <Header />
       </div>
       <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)] h-screen">
-        <h2 className="text-2xl font-bold mb-4 text-center mt-[24px] sm:mt-[24px]">Dịch tài liệu</h2>
+        <h2 className="text-2xl font-bold text-center mt-[24px] sm:mt-[24px]">Dịch tài liệu</h2>
         <div className="w-full h-auto flex justify-content-center pb-[28px] max-h-full h-screen sm:h-0">
           <div className="w-full sm:max-w-[85%] mx-auto p-4 sm:p-8">
             <div className="mb-6">
@@ -122,7 +129,7 @@ const TranslateDocumentPage = () => {
                 <input
                   id="fileInput"
                   type="file"
-                  accept=".pdf,.doc,.docx,.txt"
+                  accept=".pdf,.doc,.docx,.docx,.txt"
                   className="hidden"
                   onChange={handleUploadDocument}
                 />
@@ -130,16 +137,30 @@ const TranslateDocumentPage = () => {
 
               {fileName && (
                 <div className="mt-4">
-                  <p className="text-gray-700">Tên tệp đã chọn: <strong>{fileName}</strong></p>
+                  <p className="text-gray-700">
+                    Tên tệp đã chọn:{" "}
+                    <strong title={fileName}>
+                      {fileName.length > 40
+                        ? `${fileName.slice(0, 20)}...${fileName.slice(-15)}`
+                        : fileName}
+                    </strong>
+                  </p>
                 </div>
               )}
 
               {fileText && (
                 <div className="mt-6">
                   <h3 className="text-base font-semibold mb-2 text-gray-700">📄 Nội dung tài liệu:</h3>
-                  <div className="bg-gray-100 p-4 rounded-lg border max-h-80 overflow-y-auto whitespace-pre-wrap text-gray-800 text-sm">
-                    {fileText}
-                  </div>
+                  {fileName?.endsWith(".docx") ? (
+                    <div
+                      className="bg-gray-100 p-4 rounded-lg border max-h-80 overflow-y-auto prose prose-sm"
+                      dangerouslySetInnerHTML={{ __html: fileText }}
+                    />
+                  ) : (
+                    <div className="bg-gray-100 p-4 rounded-lg border max-h-80 overflow-y-auto whitespace-pre-wrap text-gray-800 text-sm">
+                      {fileText}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -233,10 +254,10 @@ const TranslateDocumentPage = () => {
             </div>
 
             {translatedText && (
-              <div className="mt-8">
+              <div className="py-8">
                 <h3 className="text-lg font-semibold mb-2 text-gray-700">🔍 Kết quả dịch:</h3>
-                <div className="bg-gray-50 p-4 border rounded-lg max-h-80 overflow-y-auto">
-                  <p className="text-gray-800 whitespace-pre-wrap">{translatedText}</p>
+                <div className="bg-gray-50 p-4 border rounded-lg max-h-80 overflow-y-auto whitespace-pre-wrap">
+                  <p className="text-gray-800">{translatedText}</p>
                 </div>
               </div>
             )}

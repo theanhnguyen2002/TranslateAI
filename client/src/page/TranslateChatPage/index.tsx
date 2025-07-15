@@ -9,7 +9,7 @@ import { IconStop } from "../../components/icon/IconStop";
 import { IconVolume } from "../../components/icon/IconVolume";
 import Header from "../../layout/header";
 import { languages } from "../../utils/languages";
-import { fetchTranslation, fetchTransliteration } from "../../utils/translate";
+import { fetchTranslation, fetchTransliteration, sendAudioToServer } from "../../utils/translate";
 import s from "./style.module.scss";
 
 
@@ -26,16 +26,15 @@ const TranslateChatPage = (props: Props) => {
   const [isListening2, setIsListening2] = useState(false); // Mic 2
   const [isSpeakingText, setIsSpeakingText] = useState(false);
   const [isSpeakingTranslated, setIsSpeakingTranslated] = useState(false);
-  const recognitionRef1 = useRef<any>(null); // Reference for Mic 1
-  const recognitionRef2 = useRef<any>(null); // Reference for Mic 2
   const [isOpenLang1, setIsOpenLang1] = useState(false);
   const [isOpenLang2, setIsOpenLang2] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [recordTimeout, setRecordTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
-  const [recordTimeout2, setRecordTimeout2] = useState<ReturnType<typeof setTimeout> | null>(null);
   const selectedLang1Name = languages.find((lang) => lang.code === selectedLang1)?.name || "Ngôn ngữ";
   const selectedLang2Name = languages.find((lang) => lang.code === selectedLang2)?.name || "Ngôn ngữ";
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
 
   useEffect(() => {
     // Load voices
@@ -98,71 +97,83 @@ const TranslateChatPage = (props: Props) => {
     setIsSpeakingTranslated(false);
   };
 
-  const toggleListening = (mic: 1 | 2) => {
-    if (!("webkitSpeechRecognition" in window)) {
-      alert("Trình duyệt không hỗ trợ nhận diện giọng nói!");
-      return;
-    }
-
-    const recognitionRef = mic === 1 ? recognitionRef1 : recognitionRef2;
-    const isListening = mic === 1 ? isListening1 : isListening2;
-    const setIsListening = mic === 1 ? setIsListening1 : setIsListening2;
-    const lang = mic === 1 ? selectedLang1 : selectedLang2;
-
-    if (isListening) {
-      recognitionRef.current?.stop();
+  const stopRecording = (
+    mic: 1 | 2,
+    setIsListening: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
       setIsListening(false);
-      if (mic === 1 && recordTimeout) clearTimeout(recordTimeout);
-      if (mic === 2 && recordTimeout2) clearTimeout(recordTimeout2);
-      return;
     }
-
-    const recognition = new (window as any).webkitSpeechRecognition();
-    recognition.lang = lang === "vi" ? "vi-VN" : lang;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = true;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[event.results.length - 1][0].transcript;
-
-      if (mic === 1) {
-        setText((prev) => prev + (prev ? " " : "") + transcript);
-      } else {
-        setTranslatedText((prev) => prev + (prev ? " " : "") + transcript);
-        fetchTranslation(transcript, selectedLang2, selectedLang1)
-          .then((result) => {
-            setText((prev) => prev + (prev ? " " : "") + result);
-          })
-          .catch(() => {
-            toast.error("Lỗi dịch ngược khi thu mic 2");
-          });
-      }
-    };
-
-    recognitionRef.current = recognition;
-    if (mic === 1) {
-      setText(""); // Clear đoạn bên trái
-    } else if (mic === 2) {
-      setTranslatedText(""); // Clear đoạn bên phải
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
-    recognition.start();
-
-    // Tự động dừng sau 3 phút
-    const timeout = setTimeout(() => {
-      recognition.stop();
-      setIsListening(false);
-      toast.info("Đã tự dừng ghi âm sau 3 phút");
-    }, 180000);
-
-    if (mic === 1) setRecordTimeout(timeout);
-    if (mic === 2) setRecordTimeout2(timeout);
   };
 
+  const toggleListening = (mic: 1 | 2) => {
+    const isListening = mic === 1 ? isListening1 : isListening2;
+    const setIsListening = mic === 1 ? setIsListening1 : setIsListening2;
+
+    if (isListening) {
+      stopRecording(mic, setIsListening);
+    } else {
+      recordAndTranscribe(mic);
+    }
+  };
+
+  const recordAndTranscribe = (mic: 1 | 2) => {
+    const setIsListening = mic === 1 ? setIsListening1 : setIsListening2;
+    const sourceLang = mic === 1 ? selectedLang1 : selectedLang2;
+    const targetLang = mic === 1 ? selectedLang2 : selectedLang1;
+
+    let chunks: BlobPart[] = [];
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      streamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      setIsListening(true);
+
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: "audio/webm" });
+        setIsListening(false);
+
+        try {
+          const transcript = await sendAudioToServer(audioBlob);
+          if (!transcript) {
+            toast.error("Không thể nhận diện giọng nói.");
+            return;
+          }
+
+          if (mic === 1) {
+            // Mic 1: Ghi vào ô 1, dịch sang ô 2, phát ô 2
+            setText(transcript);
+            const result = await fetchTranslation(transcript, sourceLang, targetLang);
+            setTranslatedText(result);
+            speakText(result, targetLang, "translated"); // Phát bản dịch (ô 2)
+          } else {
+            // Mic 2: Ghi vào ô 2, dịch sang ô 1, phát ô 1
+            setTranslatedText(transcript); // Ghi nội dung nói vào ô 2
+            const result = await fetchTranslation(transcript, sourceLang, targetLang);
+            setText(result);
+            speakText(result, targetLang, "text"); // Phát bản dịch (ô 1)
+          }
+        } catch (err) {
+          console.error("Lỗi khi nhận giọng nói:", err);
+          toast.error("Lỗi khi xử lý giọng nói");
+        }
+      };
+
+      mediaRecorder.start();
+    }).catch((err) => {
+      console.error("Không thể truy cập mic:", err);
+      toast.error("Không thể truy cập microphone.");
+      setIsListening(false);
+    });
+  };
 
 
 
@@ -206,11 +217,9 @@ const TranslateChatPage = (props: Props) => {
   useEffect(() => {
     if (translatedText && selectedLang2) {
       fetchTransliterationData(translatedText, selectedLang2);
-      if (autoSpeak) {
-        speakText(translatedText, selectedLang2, "translated");
-      }
     }
-  }, [translatedText, selectedLang2, autoSpeak]);
+  }, [translatedText, selectedLang2]);
+
 
   return (
     <div className={`${s.rainbow_bg} justify-center items-center h-screen`}>
@@ -264,7 +273,7 @@ const TranslateChatPage = (props: Props) => {
               <div className="relative w-full h-auto">
                 <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
-                    className="w-full h-full min-h-[200px] resize-none outline-none"
+                    className="w-full h-full min-h-[200px] resize-none outline-none cursor-default"
                     placeholder={`Bản dịch ${selectedLang1Name}...`}
                     value={text}
                     onChange={(e) => {
@@ -322,7 +331,9 @@ const TranslateChatPage = (props: Props) => {
               className="flex sm:items-center justify-content-center py-3"
               onClick={swapLanguages}
             >
-              <IconArrowLeftRight width="24px" height="24px" />
+              <div className="cursor-pointer">
+                <IconArrowLeftRight width="24px" height="24px" />
+              </div>
             </div>
             <div className="w-full">
               <div className="flex gap-2 px-3">
@@ -360,7 +371,7 @@ const TranslateChatPage = (props: Props) => {
                 </div>
               </div>
               <div className="relative w-full h-auto">
-                <div className="absolute top-2 right-2 flex items-center gap-2 px-3 mt-2">
+                {/* <div className="absolute top-2 right-2 flex items-center gap-2 px-3 mt-2">
                   <label className="flex items-center gap-2 text-sm text-gray-700">
                     <input
                       type="checkbox"
@@ -370,10 +381,10 @@ const TranslateChatPage = (props: Props) => {
                     />
                     Tự động phát âm bản dịch
                   </label>
-                </div>
+                </div> */}
                 <div className="w-full bg-white py-10 px-3 border-gray-300 rounded-2xl border">
                   <textarea
-                    className="w-full h-full min-h-[200px] resize-none outline-none"
+                    className="w-full h-full min-h-[200px] resize-none outline-none cursor-default"
                     placeholder={`Bản dịch ${selectedLang2Name}...`}
                     value={loading ? "Đang dịch..." : translatedText}
                     readOnly
@@ -390,7 +401,7 @@ const TranslateChatPage = (props: Props) => {
                         onClick={() => toggleListening(2)}
                       >
                         {isListening2 ? (
-                          <IconStop width="18px" height="18px" color="#fff" />
+                          <IconStop width="24px" height="24px" color="#fff" />
                         ) : (
                           <IconMic width="22px" height="22px" color="#3a79cb" />
                         )}
