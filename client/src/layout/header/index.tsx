@@ -88,7 +88,7 @@ const Header = (props: Props) => {
             </ul>
           </div>
           <div className="md:order-3">
-            <button className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-gray-50 rounded-xl flex items-center gap-2">
+            {/* <button className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-gray-50 rounded-xl flex items-center gap-2">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -102,7 +102,7 @@ const Header = (props: Props) => {
                 />
               </svg>
               <span>Login</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </nav>
