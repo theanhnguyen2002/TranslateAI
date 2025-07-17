@@ -4,7 +4,8 @@ import style from "./style.module.scss";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { EPath } from "./route";
-import VoiceChatTranslator from "../page/TranslatePhotoPage/index_test_chatMic";
+import VoiceChatTranslator from "../page/TranslateChatPage/ConversationTranslation";
+import ConversationTranslation from "../page/TranslateChatPage/ConversationTranslation";
 const HomePage = lazy(() => import("../page/HomePage/index"));
 const TranslatePage = lazy(() => import("../page/TranslatePage/index"));
 const TranslatePhotoPage = lazy(
@@ -47,8 +48,8 @@ function App() {
               element={<TranslateChatPage />}
             />
             <Route
-              path={EPath.translate_chatTest}
-              element={<VoiceChatTranslator />}
+              path={EPath.translation_conversation}
+              element={<ConversationTranslation />}
             />
           </Routes>
         </Suspense>

@@ -4,7 +4,7 @@ export const EPath = {
     translate_photo: '/translate_photo',
     translate_document: '/translate_document',
     translate_chat: '/translate_chat',
-    translate_chatTest: '/translate_chatTest',
+    translation_conversation: '/translation_conversation',
     
     notFoundPage: '/404',
   };
