@@ -31,7 +31,7 @@ const HomePage = (props: Props) => {
                 </a>
               </div> */}
               <img
-                className="w-82"
+                className="w-[50%]"
                 src="https://res.cloudinary.com/ddj3vx8q3/image/upload/v1741279866/Pngtree_internet_global_network_structure_map_5268639_xncu43.png"
                 alt=""
               />
