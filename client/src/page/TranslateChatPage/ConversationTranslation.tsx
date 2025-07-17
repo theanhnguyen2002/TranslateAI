@@ -14,6 +14,7 @@ import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
 import { languages } from "../../utils/languages";
 import { toast } from "react-toastify";
 import { IconCopy2 } from "../../components/icon/IconCopy2";
+import { IconEllipsis } from "../../components/icon/IconEllipsis";
 
 type Message = {
   from: "self" | "partner";
@@ -22,7 +23,7 @@ type Message = {
 };
 
 const ConversationTranslation = () => {
-  const [myLanguage, setMyLanguage] = useState("vi");
+  const [myLanguage, setMyLanguage] = useState("");
   const [partnerLanguage, setPartnerLanguage] = useState("en");
   const [isOpenLang1, setIsOpenLang1] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,6 +35,9 @@ const ConversationTranslation = () => {
   const [partnerId, setPartnerId] = useState("");
   const [anchorElMap, setAnchorElMap] = useState<{ [key: number]: HTMLElement | null }>({});
   const [isConnected, setIsConnected] = useState(false);
+
+
+  console.log("first", myLanguage);
 
   useEffect(() => {
     fetch("http://localhost:3001/api/get-client-id")
@@ -67,7 +71,7 @@ const ConversationTranslation = () => {
     const handlePartnerLanguageUpdate = ({ partnerId, language }: { partnerId: string, language: string }) => {
       if (partnerId !== partnerId) return;
       setPartnerLanguage(language);
-      toast.info(`Thiết bị ${partnerId} đã đổi ngôn ngữ sang ${language}`);
+      // toast.info(`Thiết bị ${partnerId} đã đổi ngôn ngữ sang ${language}`);
     };
 
     socket.on("partner_language_updated", handlePartnerLanguageUpdate);
@@ -206,7 +210,7 @@ const ConversationTranslation = () => {
 
             {isOpenLang1 && (
               <div className="absolute z-10 bg-white rounded-lg shadow-sm w-44 mt-1">
-                <ul className="max-h-96 overflow-y-auto py-2 text-sm text-gray-700">
+                <ul className="max-h-96 overflow-y-auto py-2 text-sm text-gray-700 pl-0">
                   {languages.map((lang) => (
                     <li key={lang.code}>
                       <button
@@ -232,7 +236,7 @@ const ConversationTranslation = () => {
         </div>
 
         <div className="flex gap-2 justify-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 mt-auto mb-auto">
             Mã thiết bị của bạn: <strong>{ownClientId}</strong>
           </p>
           <button
@@ -256,6 +260,7 @@ const ConversationTranslation = () => {
             />
             <button
               onClick={() => {
+                if (!myLanguage) return toast.warning("Vui lòng chọn ngôn ngữ của bạn");
                 if (!partnerId.trim()) return toast.warning("Vui lòng nhập mã thiết bị");
                 if (partnerId === ownClientId) return toast.error("Không thể kết nối với chính bạn");
 
@@ -265,7 +270,11 @@ const ConversationTranslation = () => {
                   language: myLanguage,
                 });
               }}
-              className="px-4 h-10 bg-blue-700 hover:bg-blue-800 text-white rounded text-sm"
+              disabled={!myLanguage}
+              className={`px-4 h-10 rounded text-sm whitespace-nowrap ${myLanguage
+                ? "bg-blue-700 hover:bg-blue-800 text-white cursor-pointer"
+                : "bg-gray-400 text-white cursor-not-allowed"
+                }`}
             >
               Kết nối
             </button>
@@ -281,7 +290,11 @@ const ConversationTranslation = () => {
                   <p className="font-semibold">{msg.translated}</p>
                 </div>
                 {msg.from === "partner" && (
-                  <IconButton size="small" onClick={(e) => handleMenuClick(e, idx)}>...</IconButton>
+                  <div className="h-[34px] mt-auto mb-auto">
+                    <IconButton size="small" onClick={(e) => handleMenuClick(e, idx)}>
+                      <IconEllipsis width="24px" height="24px" color="#4a4a4a" />
+                    </IconButton>
+                  </div>
                 )}
                 <Menu anchorEl={anchorElMap[idx]} open={Boolean(anchorElMap[idx])} onClose={() => handleCloseMenu(idx)}>
                   <MenuItem onClick={() => { navigator.clipboard.writeText(msg.translated); handleCloseMenu(idx); }}>
@@ -290,12 +303,12 @@ const ConversationTranslation = () => {
                   <MenuItem
                     onClick={async () => {
                       try {
-                        const audioBase64 = await fetchTextToSpeech(msg.translated, partnerLanguage);
+                        const audioBase64 = await fetchTextToSpeech(msg.translated, myLanguage);
                         if (audioBase64) {
                           new Audio(audioBase64).play();
                         } else {
                           const utter = new SpeechSynthesisUtterance(msg.translated);
-                          utter.lang = partnerLanguage;
+                          utter.lang = myLanguage;
                           speechSynthesis.speak(utter);
                         }
                       } catch (err) {
@@ -313,7 +326,7 @@ const ConversationTranslation = () => {
           </div>
         </div>
 
-        <div className="flex justify-center mt-4">
+        <div className="flex justify-center my-4">
           <button
             className={`p-3 rounded-full transition duration-200 ${listening ? "bg-red-500 hover:bg-red-600" : !isConnected ? "bg-gray-400 cursor-not-allowed" : "bg-blue-700 hover:bg-blue-800"}`}
             onClick={() => {
@@ -325,7 +338,7 @@ const ConversationTranslation = () => {
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
