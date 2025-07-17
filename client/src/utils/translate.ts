@@ -86,20 +86,19 @@ export const sendAudioToServer = async (audioBlob: Blob): Promise<string | null>
   }
 };
 
-export const fetchTextToSpeech = async (text: string, voice = "en") => {
-  const matchedLang = languages.find((lang) => lang.code === voice);
-  const languageCode = matchedLang?.voice || "en-US";
-
+export const fetchTextToSpeech = async (text: string, voiceCode: string) => {
   try {
     const response = await fetch(`${BACKEND_URL}/text-to-speech`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, lang: languageCode }),
+      body: JSON.stringify({ text, lang: voiceCode }), // Truyền đúng voiceCode đang chọn
     });
+
     const data = await response.json();
-    return data.audio; // Trả về base64 URL
+    return data.audio;
   } catch (error) {
     console.error("❌ Lỗi khi gọi Text-to-Speech:", error);
     return "";
   }
 };
+

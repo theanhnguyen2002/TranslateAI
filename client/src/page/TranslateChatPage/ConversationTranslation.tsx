@@ -22,10 +22,9 @@ type Message = {
 };
 
 const ConversationTranslation = () => {
-  const [selectedLang1, setSelectedLang1] = useState("vi");
-  const [selectedLang2, setSelectedLang2] = useState("en");
+  const [myLanguage, setMyLanguage] = useState("vi");
+  const [partnerLanguage, setPartnerLanguage] = useState("en");
   const [isOpenLang1, setIsOpenLang1] = useState(false);
-  const [isOpenLang2, setIsOpenLang2] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [listening, setListening] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -33,15 +32,9 @@ const ConversationTranslation = () => {
   const clientId = useRef("");
   const [ownClientId, setOwnClientId] = useState("");
   const [partnerId, setPartnerId] = useState("");
-  const [receivedAudio, setReceivedAudio] = useState<string | null>(null);
-
-
-  const [anchorElMap, setAnchorElMap] = useState<{
-    [key: number]: HTMLElement | null;
-  }>({});
+  const [anchorElMap, setAnchorElMap] = useState<{ [key: number]: HTMLElement | null }>({});
   const [isConnected, setIsConnected] = useState(false);
 
-  // Lấy clientId
   useEffect(() => {
     fetch("http://localhost:3001/api/get-client-id")
       .then((res) => res.json())
@@ -53,7 +46,6 @@ const ConversationTranslation = () => {
       .catch(() => toast.error("Không lấy được mã thiết bị"));
   }, []);
 
-  //lắng nghe sự kiện kết nối
   useEffect(() => {
     socket.on("partner_connected", ({ to }) => {
       toast.success(`Đã kết nối với thiết bị ${to}`);
@@ -62,7 +54,7 @@ const ConversationTranslation = () => {
 
     socket.on("partner_not_found", ({ to }) => {
       toast.error(`Không tìm thấy thiết bị ${to}`);
-      setIsConnected(true);
+      setIsConnected(false);
     });
 
     return () => {
@@ -71,44 +63,55 @@ const ConversationTranslation = () => {
     };
   }, []);
 
-  //phát âm thanh text-to-speech
   useEffect(() => {
-    const handleReceiveMessage = async (data: Message & { from: string }) => {
-      if (data.original && data.translated) {
-        if (data.from === clientId.current) return;
-
-        setMessages(prev => [...prev, { ...data, from: "partner" }]);
-
-        try {
-          const audioBase64 = await fetchTextToSpeech(data.translated, selectedLang1);
-
-          if (audioBase64) {
-            const audio = new Audio(audioBase64); // Dùng trực tiếp src = data:audio/mpeg;base64,...
-            audio.play().catch((err) => {
-              console.error("Lỗi phát âm:", err);
-            });
-          } else {
-            const utterance = new SpeechSynthesisUtterance(data.translated);
-            utterance.lang = selectedLang1;
-            speechSynthesis.speak(utterance);
-          }
-        } catch (err) {
-          console.error("Lỗi khi xử lý TTS:", err);
-        }
-      }
+    const handlePartnerLanguageUpdate = ({ partnerId, language }: { partnerId: string, language: string }) => {
+      if (partnerId !== partnerId) return;
+      setPartnerLanguage(language);
+      toast.info(`Thiết bị ${partnerId} đã đổi ngôn ngữ sang ${language}`);
     };
 
+    socket.on("partner_language_updated", handlePartnerLanguageUpdate);
+
+    return () => {
+      socket.off("partner_language_updated", handlePartnerLanguageUpdate);
+    };
+  }, [partnerId]);
+
+  useEffect(() => {
+    const handleReceiveMessage = async (data: Message & { from: string, targetLang?: string }) => {
+      if (!data.original || !data.translated) return;
+      if (data.from === clientId.current) return;
+
+      setMessages((prev) => [...prev, { ...data, from: "partner" }]);
+
+      try {
+        const targetLang = data.targetLang || partnerLanguage; // fallback nếu server chưa gửi
+        const audioBase64 = await fetchTextToSpeech(data.translated, targetLang);
+
+        if (audioBase64) {
+          const audio = new Audio(audioBase64);
+          audio.play().catch((err) => {
+            console.error("Lỗi phát âm:", err);
+          });
+        } else {
+          const utter = new SpeechSynthesisUtterance(data.translated);
+          utter.lang = myLanguage;
+          speechSynthesis.speak(utter);
+        }
+      } catch (err) {
+        console.error("Lỗi xử lý TTS:", err);
+      }
+    };
 
     socket.on("receive_message", handleReceiveMessage);
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
     };
-  }, [selectedLang1]);
+  }, [myLanguage]);
 
   const toggleRecording = async () => {
     if (listening) return stopRecording();
-
     setListening(true);
     const chunks: BlobPart[] = [];
 
@@ -128,11 +131,7 @@ const ConversationTranslation = () => {
           const transcript = await sendAudioToServer(audioBlob);
           if (!transcript) return;
 
-          const translated = await fetchTranslation(
-            transcript,
-            selectedLang1,
-            selectedLang2
-          );
+          const translated = await fetchTranslation(transcript, myLanguage, partnerLanguage);
 
           const msg: Message = {
             from: "self",
@@ -147,6 +146,7 @@ const ConversationTranslation = () => {
             from: clientId.current,
             original: transcript,
             translated,
+            targetLang: partnerLanguage,
           });
         } catch (err) {
           toast.error("Lỗi xử lý giọng nói");
@@ -166,10 +166,7 @@ const ConversationTranslation = () => {
     setListening(false);
   };
 
-  const handleMenuClick = (
-    event: React.MouseEvent<HTMLButtonElement>,
-    idx: number
-  ) => {
+  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>, idx: number) => {
     setAnchorElMap((prev) => ({ ...prev, [idx]: event.currentTarget }));
   };
 
@@ -179,258 +176,152 @@ const ConversationTranslation = () => {
 
   return (
     <div className={`${s.rainbow_bg} justify-center items-center h-screen`}>
-      <div className="header">
-        <Header />
-      </div>
-      <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)]">
-        <div className="pb-4">
-          <h2 className="text-2xl font-bold py-4">Hội thoại</h2>
-          <div className="flex flex-col sm:flex-row gap-2 mb-4 sm:justify-center">
-            <div className="relative inline-block">
-              <div className="relative inline-block">
-                <button
-                  onClick={() => setIsOpenLang1(!isOpenLang1)}
-                  className="min-w-[176px] flex justify-content-between text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-2.5 text-center inline-flex items-center"
-                >
-                  {languages.find((lang) => lang.code === selectedLang1)?.name ||
-                    "Select Language"}
-                  <svg
-                    className="w-2.5 h-2.5 ms-1"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 10 6"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="m1 1 4 4 4-4"
-                    />
-                  </svg>
-                </button>
-                {isOpenLang1 && (
-                  <div className="absolute z-10 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 mt-1">
-                    <ul className="max-h-96 overflow-y-auto py-2 pl-0 text-sm text-gray-700">
-                      {languages.map((lang) => (
-                        <li key={lang.code}>
-                          <button
-                            onClick={() => {
-                              setSelectedLang1(lang.code);
-                              setIsOpenLang1(false);
-                            }}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                          >
-                            {lang.name}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
+      <Header />
 
-            <Button
-              onClick={() => {
-                const t = selectedLang1;
-                setSelectedLang1(selectedLang2);
-                setSelectedLang2(t);
-              }}
+      <div className="overflow-y-auto max-h-[calc(100vh-64px)]">
+        <h2 className="text-2xl font-bold py-4 text-center">Hội thoại</h2>
+
+        <div className="flex justify-center mb-4">
+          <div className="relative inline-block">
+            <button
+              onClick={() => setIsOpenLang1(!isOpenLang1)}
+              className="min-w-[176px] flex justify-between items-center text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-2.5"
             >
-              <IconArrowLeftRight width="24px" height="24px" />
-            </Button>
-            <div className="relative inline-block">
-              <div className="relative inline-block">
-                <button
-                  onClick={() => setIsOpenLang2(!isOpenLang2)}
-                  className="min-w-[176px] flex justify-content-between text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-2.5 text-center inline-flex items-center"
-                >
-                  {languages.find((lang) => lang.code === selectedLang2)?.name ||
-                    "Select Language"}
-                  <svg
-                    className="w-2.5 h-2.5 ms-1"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 10 6"
-                  >
-                    <path
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="m1 1 4 4 4-4"
-                    />
-                  </svg>
-                </button>
-                {/* Dropdown menu */}
-                {isOpenLang2 && (
-                  <div className="absolute z-10 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 mt-1">
-                    <ul className="max-h-96 overflow-y-auto py-2 pl-0 text-sm text-gray-700">
-                      {languages.map((lang) => (
-                        <li key={lang.code}>
-                          <button
-                            onClick={() => {
-                              setSelectedLang2(lang.code);
-                              setIsOpenLang2(false);
-                            }}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                          >
-                            {lang.name}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+              {languages.find((lang) => lang.code === myLanguage)?.name || "Chọn ngôn ngữ"}
+              <svg
+                className="w-2.5 h-2.5 ms-1"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="m1 1 4 4 4-4"
+                />
+              </svg>
+            </button>
+
+            {isOpenLang1 && (
+              <div className="absolute z-10 bg-white rounded-lg shadow-sm w-44 mt-1">
+                <ul className="max-h-96 overflow-y-auto py-2 text-sm text-gray-700">
+                  {languages.map((lang) => (
+                    <li key={lang.code}>
+                      <button
+                        onClick={() => {
+                          setMyLanguage(lang.code);
+                          setIsOpenLang1(false);
+                          // Gửi socket cập nhật ngôn ngữ mới
+                          socket.emit("update_language", {
+                            clientId: ownClientId,
+                            language: lang.code,
+                          });
+                        }}
+                        className={`block w-full text-left px-4 py-2 hover:bg-gray-100 ${lang.code === myLanguage ? "bg-gray-200 font-medium" : ""}`}
+                      >
+                        {lang.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            )}
           </div>
-          <div className="flex gap-2 justify-center">
-            <p className="text-center text-sm text-gray-600 mb-4">
-              Mã thiết bị của bạn: <strong>{ownClientId}</strong>
-            </p>
+        </div>
+
+        <div className="flex gap-2 justify-center">
+          <p className="text-sm text-gray-600">
+            Mã thiết bị của bạn: <strong>{ownClientId}</strong>
+          </p>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(ownClientId);
+              toast.success("Đã sao chép mã thiết bị!");
+            }}
+            title="Sao chép"
+          >
+            <IconCopy2 width="18px" height="18px" color="#035acb" />
+          </button>
+        </div>
+
+        <div className="flex justify-center px-8 mt-4">
+          <div className="mb-2 w-full max-w-xl flex gap-2">
+            <input
+              className="w-full p-2 h-10 rounded border text-sm"
+              value={partnerId}
+              onChange={(e) => setPartnerId(e.target.value)}
+              placeholder="Mã thiết bị cần kết nối"
+            />
             <button
               onClick={() => {
-                navigator.clipboard.writeText(ownClientId);
-                toast.success("Đã sao chép mã thiết bị!");
+                if (!partnerId.trim()) return toast.warning("Vui lòng nhập mã thiết bị");
+                if (partnerId === ownClientId) return toast.error("Không thể kết nối với chính bạn");
+
+                socket.emit("connect_to_partner", {
+                  from: clientId.current,
+                  to: partnerId.trim(),
+                  language: myLanguage,
+                });
               }}
-              className="mb-4"
-              title="Sao chép"
+              className="px-4 h-10 bg-blue-700 hover:bg-blue-800 text-white rounded text-sm"
             >
-              <IconCopy2 width="18px" height="18px" color="#035acb" />
+              Kết nối
             </button>
           </div>
-          <div className="flex justify-center px-8">
-            <div className="mb-2 w-full max-w-xl flex gap-2">
-              <input
-                className="w-full p-2 h-10 rounded border mb-2 text-sm outline-none"
-                value={partnerId}
-                onChange={(e) => setPartnerId(e.target.value)}
-                placeholder="Mã thiết bị cần kết nối"
-              />
-              <button
-                onClick={() => {
-                  if (!partnerId.trim()) {
-                    toast.warning("Vui lòng nhập mã thiết bị");
-                    return;
-                  }
+        </div>
 
-                  if (partnerId.trim() === ownClientId) {
-                    toast.error("Không thể kết nối với chính thiết bị của bạn!");
-                    return;
-                  }
-
-                  socket.emit("connect_to_partner", {
-                    from: clientId.current,
-                    to: partnerId.trim(),
-                  });
-                }}
-                className="px-4 h-10 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded whitespace-nowrap"
-              >
-                Kết nối
-              </button>
-            </div>
-          </div>
-
-          <div className="flex justify-center px-8">
-            <div className="bg-white rounded-2xl shadow p-4 w-full max-w-xl flex-1 overflow-y-auto mb-4 min-h-[400px] max-h-[200px] sm:min-h-[300px]">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`mb-3 flex ${msg.from === "self" ? "justify-end" : "justify-start"
-                    }`}
-                >
-                  <div
-                    className={`max-w-xs p-2 rounded-lg ${msg.from === "self" ? "bg-green-100" : "bg-blue-100"
-                      }`}
-                  >
-                    <p className="text-sm italic">"{msg.original}"</p>
-                    <p className="font-semibold">{msg.translated}</p>
-                  </div>
-                  {msg.from === "partner" && (
-                    <div className="mr-2">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuClick(e, idx)}
-                      >
-                        ...
-                      </IconButton>
-                      <Menu
-                        anchorEl={anchorElMap[idx]}
-                        open={Boolean(anchorElMap[idx])}
-                        onClose={() => handleCloseMenu(idx)}
-                      >
-                        <MenuItem
-                          onClick={() => {
-                            navigator.clipboard.writeText(msg.translated);
-                            handleCloseMenu(idx);
-                          }}
-                        >
-                          Sao chép
-                        </MenuItem>
-                        <MenuItem
-                          onClick={async () => {
-                            try {
-                              const audioBase64 = await fetchTextToSpeech(msg.translated, selectedLang1);
-
-                              if (audioBase64) {
-                                const audio = new Audio(audioBase64);
-                                audio.play().catch((err) => {
-                                  console.error("Lỗi phát lại:", err);
-                                });
-                              } else {
-                                const utter = new SpeechSynthesisUtterance(msg.translated);
-                                utter.lang = selectedLang1;
-                                speechSynthesis.speak(utter);
-                              }
-                            } catch (err) {
-                              console.error("Phát lại thất bại:", err);
-                            }
-
-                            handleCloseMenu(idx);
-                          }}
-                        >
-                          Phát lại
-                        </MenuItem>
-
-
-                      </Menu>
-                    </div>
-                  )}
+        <div className="flex justify-center px-8 mt-4">
+          <div className="bg-white rounded-2xl shadow p-4 w-full max-w-xl overflow-y-auto min-h-[300px] max-h-[400px]">
+            {messages.map((msg, idx) => (
+              <div key={idx} className={`mb-3 flex ${msg.from === "self" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-xs p-2 rounded-lg ${msg.from === "self" ? "bg-green-100" : "bg-blue-100"}`}>
+                  <p className="text-sm italic">"{msg.original}"</p>
+                  <p className="font-semibold">{msg.translated}</p>
                 </div>
-              ))}
-              {listening && (
-                <p className="text-center text-blue-500">Đang nghe...</p>
-              )}
-              
-
-            </div>
+                {msg.from === "partner" && (
+                  <IconButton size="small" onClick={(e) => handleMenuClick(e, idx)}>...</IconButton>
+                )}
+                <Menu anchorEl={anchorElMap[idx]} open={Boolean(anchorElMap[idx])} onClose={() => handleCloseMenu(idx)}>
+                  <MenuItem onClick={() => { navigator.clipboard.writeText(msg.translated); handleCloseMenu(idx); }}>
+                    Sao chép
+                  </MenuItem>
+                  <MenuItem
+                    onClick={async () => {
+                      try {
+                        const audioBase64 = await fetchTextToSpeech(msg.translated, partnerLanguage);
+                        if (audioBase64) {
+                          new Audio(audioBase64).play();
+                        } else {
+                          const utter = new SpeechSynthesisUtterance(msg.translated);
+                          utter.lang = partnerLanguage;
+                          speechSynthesis.speak(utter);
+                        }
+                      } catch (err) {
+                        console.error("Lỗi phát lại:", err);
+                      }
+                      handleCloseMenu(idx);
+                    }}
+                  >
+                    Phát lại
+                  </MenuItem>
+                </Menu>
+              </div>
+            ))}
+            {listening && <p className="text-center text-blue-500">Đang nghe...</p>}
           </div>
+        </div>
 
+        <div className="flex justify-center mt-4">
           <button
-            className={`left-4 bottom-2 p-3 rounded-full z-50 transition-all duration-200
-    ${listening
-                ? "bg-red-500 hover:bg-red-600"
-                : !isConnected
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-700 hover:bg-blue-800 cursor-pointer"
-              }`}
+            className={`p-3 rounded-full transition duration-200 ${listening ? "bg-red-500 hover:bg-red-600" : !isConnected ? "bg-gray-400 cursor-not-allowed" : "bg-blue-700 hover:bg-blue-800"}`}
             onClick={() => {
-              if (!isConnected) {
-                toast.warning("Bạn chưa kết nối với thiết bị nào!");
-                return;
-              }
+              if (!isConnected) return toast.warning("Bạn chưa kết nối với thiết bị nào!");
               toggleRecording();
             }}
           >
-            {listening ? (
-              <IconStop width="24px" height="24px" color="#ffff" />
-            ) : (
-              <IconMic width="22px" height="22px" color="#ffff" />
-            )}
+            {listening ? <IconStop width="24px" height="24px" color="#fff" /> : <IconMic width="22px" height="22px" color="#fff" />}
           </button>
         </div>
       </div>
