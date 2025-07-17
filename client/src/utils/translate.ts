@@ -1,15 +1,15 @@
 // translation.ts
 
+import { languages } from "./languages";
+
+
 export type TranslationResult = {
   translatedText: string;
   transliteration: string;
 };
 
-const BACKEND_URL = "https://api.sportshophn.shop/api";
+const BACKEND_URL = "http://localhost:3001/api";
 
-/**
- * Gọi backend để dịch văn bản và chỉ trả về phần đã dịch.
- */
 export const fetchTranslation = async (
   text: string,
   sl: string,
@@ -21,19 +21,14 @@ export const fetchTranslation = async (
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, sourceLang: sl, targetLang: tl }),
     });
-
     const data = await response.json();
-    const translation = data?.data?.translations?.[0]?.translatedText;
-    return translation || "Không thể dịch";
+    return data?.data?.translations?.[0]?.translatedText || "Không thể dịch";
   } catch (error) {
     console.error("❌ Lỗi khi dịch văn bản:", error);
     return "Không thể dịch";
   }
 };
 
-/**
- * Gọi backend để dịch văn bản và lấy cả bản dịch + phiên âm.
- */
 export const fetchTransliteration = async (
   text: string,
   sl: string,
@@ -45,10 +40,8 @@ export const fetchTransliteration = async (
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, sourceLang: sl, targetLang: tl }),
     });
-
     const data = await response.json();
     const translation = data?.data?.translations?.[0];
-
     return {
       translatedText: translation?.translatedText || "Không thể dịch.",
       transliteration: translation?.transliteration || "Không có phiên âm.",
@@ -62,19 +55,13 @@ export const fetchTransliteration = async (
   }
 };
 
-/**
- * Gọi backend để nhận diện văn bản từ ảnh (OCR).
- */
-export const detectTextFromImage = async (
-  base64Image: string
-): Promise<string> => {
+export const detectTextFromImage = async (base64Image: string): Promise<string> => {
   try {
     const response = await fetch(`${BACKEND_URL}/detect-text`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ base64Image }),
     });
-
     const result = await response.json();
     return result.text || "Không thể nhận diện chữ.";
   } catch (error) {
@@ -83,25 +70,36 @@ export const detectTextFromImage = async (
   }
 };
 
-/**
- * Gửi file audio lên backend để chuyển thành văn bản.
- */
-export const sendAudioToServer = async (
-  audioBlob: Blob
-): Promise<string | null> => {
+export const sendAudioToServer = async (audioBlob: Blob): Promise<string | null> => {
   try {
     const formData = new FormData();
     formData.append("audio", audioBlob, "voice.webm");
-
     const response = await fetch(`${BACKEND_URL}/speech-to-text`, {
       method: "POST",
       body: formData,
     });
-
     const data = await response.json();
     return data.transcript || null;
   } catch (error) {
     console.error("❌ Lỗi gửi âm thanh:", error);
     return null;
+  }
+};
+
+export const fetchTextToSpeech = async (text: string, voice = "en") => {
+  const matchedLang = languages.find((lang) => lang.code === voice);
+  const languageCode = matchedLang?.voice || "en-US";
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/text-to-speech`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang: languageCode }),
+    });
+    const data = await response.json();
+    return data.audio; // Trả về base64 URL
+  } catch (error) {
+    console.error("❌ Lỗi khi gọi Text-to-Speech:", error);
+    return "";
   }
 };
