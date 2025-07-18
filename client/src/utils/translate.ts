@@ -8,7 +8,7 @@ export type TranslationResult = {
   transliteration: string;
 };
 
-const BACKEND_URL = "http://localhost:3001/api";
+const BACKEND_URL = "http://sportshophn.shop/api";
 
 export const fetchTranslation = async (
   text: string,
