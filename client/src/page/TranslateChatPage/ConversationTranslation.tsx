@@ -186,7 +186,7 @@ const ConversationTranslation = () => {
     <div className={`${s.rainbow_bg} justify-center items-center h-screen`}>
       <Header />
 
-      <div className="overflow-y-auto max-h-[calc(100vh-64px)]">
+      <div className="overflow-y-auto max-h-[calc(100vh-112px)] sm:max-h-[calc(100vh-64px)]">
         <h2 className="text-2xl font-bold py-4 text-center">Hội thoại</h2>
 
         <div className="flex justify-center mb-4">
@@ -289,7 +289,7 @@ const ConversationTranslation = () => {
         </div>
 
         <div className="flex justify-center px-8 mt-4">
-          <div className="bg-white rounded-2xl shadow p-4 w-full max-w-xl overflow-y-auto min-h-[300px] max-h-[400px]">
+          <div className="bg-white rounded-2xl shadow p-4 w-full max-w-xl overflow-y-auto h-[300px]">
             {messages.map((msg, idx) => (
               <div key={idx} className={`mb-3 flex ${msg.from === "self" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-xs p-2 rounded-lg ${msg.from === "self" ? "bg-green-100" : "bg-blue-100"}`}>
