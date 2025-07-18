@@ -297,13 +297,13 @@ const TranslatePhotoPage = (props: Props) => {
                 <div className="sm:flex sm:gap-5 w-[100%] h-full sm:h-[350px]">
                   <div className="w-full h-full">
                     <div className="flex px-3">
-                      <div className="flex">
+                      {/* <div className="flex">
                         <Button>
                           <p className="text-[#035acb] m-auto">
                             Phát hiện ngôn ngữ
                           </p>
                         </Button>
-                      </div>
+                      </div> */}
                       <div className="border-b-2 border-[#035acb]"></div>
                       <div className="relative inline-block">
                         <button

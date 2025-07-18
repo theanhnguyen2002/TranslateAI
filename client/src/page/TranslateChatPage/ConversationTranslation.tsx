@@ -329,7 +329,6 @@ const ConversationTranslation = () => {
                 </Menu>
               </div>
             ))}
-            {listening && <p className="text-center text-blue-500">Đang nghe...</p>}
           </div>
         </div>
 
