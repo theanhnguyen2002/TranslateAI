@@ -140,11 +140,11 @@ const TranslatePage = (props: Props) => {
           <div className="sm:flex sm:gap-5 w-[85%]">
             <div className="w-full">
               <div className="flex px-3">
-                <div className="flex">
+                {/* <div className="flex">
                   <Button>
                     <p className="text-[#035acb] m-auto">Phát hiện ngôn ngữ</p>
                   </Button>
-                </div>
+                </div> */}
                 <div className="border-b-2 border-[#035acb]"></div>
                 <div className="relative inline-block">
                   <button

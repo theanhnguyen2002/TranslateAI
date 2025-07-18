@@ -136,7 +136,7 @@ const ConversationTranslation = () => {
         const audioBlob = new Blob(chunks, { type: "audio/webm" });
 
         try {
-          const transcript = await sendAudioToServer(audioBlob);
+          const transcript = await sendAudioToServer(audioBlob, myLanguage);
           if (!transcript) return;
 
           const translated = await fetchTranslation(transcript, myLanguage, partnerLanguage);
@@ -329,7 +329,6 @@ const ConversationTranslation = () => {
                 </Menu>
               </div>
             ))}
-            {listening && <p className="text-center text-blue-500">Đang nghe...</p>}
           </div>
         </div>
 

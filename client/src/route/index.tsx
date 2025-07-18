@@ -14,9 +14,6 @@ const TranslatePhotoPage = lazy(
 const TranslateDocumentPage = lazy(
   () => import("../page/TranslateDocumentPage/index")
 );
-const TranslateChatPage = lazy(
-  () => import("../page/TranslateChatPage/index")
-);
 
 function App() {
   return (
@@ -42,10 +39,6 @@ function App() {
             <Route
               path={EPath.translate_document}
               element={<TranslateDocumentPage />}
-            />
-            <Route
-              path={EPath.translate_chat}
-              element={<TranslateChatPage />}
             />
             <Route
               path={EPath.translation_conversation}
