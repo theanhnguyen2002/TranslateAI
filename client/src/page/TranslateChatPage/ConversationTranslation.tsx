@@ -35,6 +35,8 @@ const ConversationTranslation = () => {
   const [partnerId, setPartnerId] = useState("");
   const [anchorElMap, setAnchorElMap] = useState<{ [key: number]: HTMLElement | null }>({});
   const [isConnected, setIsConnected] = useState(false);
+  const [canPlayAudio, setCanPlayAudio] = useState(false);
+
 
 
   console.log("first", myLanguage);
@@ -89,15 +91,16 @@ const ConversationTranslation = () => {
       setMessages((prev) => [...prev, { ...data, from: "partner" }]);
 
       try {
-        const targetLang = data.targetLang || partnerLanguage; // fallback nếu server chưa gửi
+        const targetLang = data.targetLang || partnerLanguage;
+
         const audioBase64 = await fetchTextToSpeech(data.translated, targetLang);
 
-        if (audioBase64) {
+        if (audioBase64 && canPlayAudio) {
           const audio = new Audio(audioBase64);
-          audio.play().catch((err) => {
+          await audio.play().catch((err) => {
             console.error("Lỗi phát âm:", err);
           });
-        } else {
+        } else if (canPlayAudio) {
           const utter = new SpeechSynthesisUtterance(data.translated);
           utter.lang = myLanguage;
           speechSynthesis.speak(utter);
@@ -264,6 +267,7 @@ const ConversationTranslation = () => {
                 if (!partnerId.trim()) return toast.warning("Vui lòng nhập mã thiết bị");
                 if (partnerId === ownClientId) return toast.error("Không thể kết nối với chính bạn");
 
+                setCanPlayAudio(true);
                 socket.emit("connect_to_partner", {
                   from: clientId.current,
                   to: partnerId.trim(),
