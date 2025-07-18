@@ -8,7 +8,7 @@ export type TranslationResult = {
   transliteration: string;
 };
 
-const BACKEND_URL = "https://api.sportshophn.shop/api";
+const BACKEND_URL = "http://localhost:3001/api";
 
 export const fetchTranslation = async (
   text: string,
@@ -70,10 +70,11 @@ export const detectTextFromImage = async (base64Image: string): Promise<string> 
   }
 };
 
-export const sendAudioToServer = async (audioBlob: Blob): Promise<string | null> => {
+export const sendAudioToServer = async (audioBlob: Blob, languageCode: string ): Promise<string | null> => {
   try {
     const formData = new FormData();
     formData.append("audio", audioBlob, "voice.webm");
+    formData.append("languageCode", languageCode);
     const response = await fetch(`${BACKEND_URL}/speech-to-text`, {
       method: "POST",
       body: formData,
