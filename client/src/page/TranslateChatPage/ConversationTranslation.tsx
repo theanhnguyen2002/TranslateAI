@@ -40,7 +40,7 @@ const ConversationTranslation = () => {
   console.log("first", myLanguage);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/get-client-id")
+    fetch("https://api.sportshophn.shop/api/get-client-id")
       .then((res) => res.json())
       .then((data) => {
         clientId.current = data.clientId.toString();
