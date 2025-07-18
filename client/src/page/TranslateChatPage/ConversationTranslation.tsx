@@ -1,20 +1,19 @@
+import { IconButton, Menu, MenuItem } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
-import { Button, IconButton, Menu, MenuItem } from "@mui/material";
-import { IconMic } from "../../components/icon/IconMic";
-import { IconStop } from "../../components/icon/IconStop";
-import { socket } from "../../utils/socket";
-import {
-  sendAudioToServer,
-  fetchTranslation,
-  fetchTextToSpeech,
-} from "../../utils/translate";
-import Header from "../../layout/header";
-import s from "./style.module.scss";
-import { IconArrowLeftRight } from "../../components/icon/IconArrowLeftRight";
-import { languages } from "../../utils/languages";
 import { toast } from "react-toastify";
 import { IconCopy2 } from "../../components/icon/IconCopy2";
 import { IconEllipsis } from "../../components/icon/IconEllipsis";
+import { IconMic } from "../../components/icon/IconMic";
+import { IconStop } from "../../components/icon/IconStop";
+import Header from "../../layout/header";
+import { languages } from "../../utils/languages";
+import { socket } from "../../utils/socket";
+import {
+  fetchTextToSpeech,
+  fetchTranslation,
+  sendAudioToServer,
+} from "../../utils/translate";
+import s from "./style.module.scss";
 
 type Message = {
   from: "self" | "partner";
@@ -38,9 +37,6 @@ const ConversationTranslation = () => {
   const [canPlayAudio, setCanPlayAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-
-
-  console.log("first", myLanguage);
 
   useEffect(() => {
     fetch("https://api.sportshophn.shop/api/get-client-id")
