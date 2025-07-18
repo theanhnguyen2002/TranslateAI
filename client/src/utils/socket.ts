@@ -1,3 +1,3 @@
 // socket.ts
 import { io } from "socket.io-client";
-export const socket = io("http://sportshophn.shop/api");
+export const socket = io("https://api.sportshophn.shop/api");
