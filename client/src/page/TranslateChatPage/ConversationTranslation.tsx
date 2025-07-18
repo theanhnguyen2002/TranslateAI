@@ -1,7 +1,7 @@
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { IconCopy2 } from "../../components/icon/IconCopy2";
+import { IconRepeat } from "../../components/icon/IconRepeat";
 import { IconEllipsis } from "../../components/icon/IconEllipsis";
 import { IconMic } from "../../components/icon/IconMic";
 import { IconStop } from "../../components/icon/IconStop";
@@ -39,14 +39,23 @@ const ConversationTranslation = () => {
 
 
   useEffect(() => {
-    fetch("https://api.sportshophn.shop/api/get-client-id")
-      .then((res) => res.json())
-      .then((data) => {
-        clientId.current = data.clientId.toString();
-        setOwnClientId(data.clientId.toString());
-        socket.emit("register", data.clientId);
-      })
-      .catch(() => toast.error("Không lấy được mã thiết bị"));
+    const storedClientId = localStorage.getItem("clientId");
+
+    if (storedClientId) {
+      clientId.current = storedClientId;
+      setOwnClientId(storedClientId);
+      socket.emit("register", storedClientId);
+    } else {
+      fetch("https://api.sportshophn.shop/api/get-client-id")
+        .then((res) => res.json())
+        .then((data) => {
+          clientId.current = data.clientId.toString();
+          setOwnClientId(data.clientId.toString());
+          localStorage.setItem("clientId", data.clientId.toString());
+          socket.emit("register", data.clientId);
+        })
+        .catch(() => toast.error("Không lấy được mã thiết bị"));
+    }
   }, []);
 
   useEffect(() => {
@@ -133,7 +142,10 @@ const ConversationTranslation = () => {
 
         try {
           const transcript = await sendAudioToServer(audioBlob, myLanguage);
-          if (!transcript) return;
+          if (!transcript || transcript.trim() === "") {
+            toast.warning("Không nhận diện được giọng nói. Vui lòng thử lại!");
+            return;
+          }
 
           const translated = await fetchTranslation(transcript, myLanguage, partnerLanguage);
 
@@ -240,13 +252,25 @@ const ConversationTranslation = () => {
             Mã thiết bị của bạn: <strong>{ownClientId}</strong>
           </p>
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(ownClientId);
-              toast.success("Đã sao chép mã thiết bị!");
+            onClick={async () => {
+              try {
+                const res = await fetch("https://api.sportshophn.shop/api/get-client-id");
+                const data = await res.json();
+                if (data.clientId) {
+                  clientId.current = data.clientId.toString();
+                  setOwnClientId(data.clientId.toString());
+                  socket.emit("register", data.clientId);
+                  toast.success("Đã đổi mã thiết bị!");
+                } else {
+                  toast.error("Lấy mã thiết bị mới thất bại");
+                }
+              } catch {
+                toast.error("Lấy mã thiết bị mới thất bại");
+              }
             }}
-            title="Sao chép"
+            title="Đổi mã thiết bị"
           >
-            <IconCopy2 width="18px" height="18px" color="#035acb" />
+            <IconRepeat width="16px" height="16px" color="#0f67da" />
           </button>
         </div>
 
@@ -284,7 +308,7 @@ const ConversationTranslation = () => {
           </div>
         </div>
 
-        <div className="flex justify-center px-8 mt-4">
+        <div className="flex justify-center px-8 mt-2">
           <div className="bg-white rounded-2xl shadow p-4 w-full max-w-xl overflow-y-auto h-[300px]">
             {messages.map((msg, idx) => (
               <div key={idx} className={`mb-3 flex ${msg.from === "self" ? "justify-end" : "justify-start"}`}>
