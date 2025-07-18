@@ -142,7 +142,10 @@ const ConversationTranslation = () => {
 
         try {
           const transcript = await sendAudioToServer(audioBlob, myLanguage);
-          if (!transcript) return;
+          if (!transcript || transcript.trim() === "") {
+            toast.warning("Không nhận diện được giọng nói. Vui lòng thử lại!");
+            return;
+          }
 
           const translated = await fetchTranslation(transcript, myLanguage, partnerLanguage);
 
@@ -305,7 +308,7 @@ const ConversationTranslation = () => {
           </div>
         </div>
 
-        <div className="flex justify-center px-8 mt-4">
+        <div className="flex justify-center px-8 mt-2">
           <div className="bg-white rounded-2xl shadow p-4 w-full max-w-xl overflow-y-auto h-[300px]">
             {messages.map((msg, idx) => (
               <div key={idx} className={`mb-3 flex ${msg.from === "self" ? "justify-end" : "justify-start"}`}>
